@@ -100,7 +100,7 @@ async def get_user(actor: deps.SignedInUser, user: deps.ExistingUser) -> User:
     return user
 
 
-@router.delete("/user/{username}", status_code=204)
+@router.delete("/user/{username}")
 async def delete_user(actor: deps.SignedInUser, user: deps.ExistingUser) -> None:
     """Delete user from DB, not including owned decks."""
     if user.username != actor.username and not actor.is_admin:

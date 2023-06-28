@@ -5,9 +5,14 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from .constants import AUTH_ALGORITHM, AUTH_SECRET_KEY
-from .models import User, UserInDB, get_user_from_db
+from .models import Deck, DeckID, User, UserInDB, get_deck_from_db, get_user_from_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+
+def check_for_resource_owner_or_admin(resource_owner, actor: User) -> None:
+    if not actor.is_admin and resource_owner != actor.username:
+        raise HTTPException(status_code=403, detail="Resource does not belong to you.")
 
 
 async def require_existing_username(username: Annotated[str, Path()]) -> UserInDB:
@@ -15,6 +20,13 @@ async def require_existing_username(username: Annotated[str, Path()]) -> UserInD
         return user
 
     raise HTTPException(status_code=404, detail="User not found")
+
+
+async def require_existing_deck(deck_id: Annotated[int, Path()]) -> Deck:
+    if deck := get_deck_from_db(deck_id):
+        return deck
+
+    raise HTTPException(status_code=404, detail="Deck not found")
 
 
 async def require_signed_in_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInDB:
@@ -49,3 +61,4 @@ async def require_admin_user(user: Annotated[UserInDB, Depends(require_signed_in
 ExistingUser = Annotated[UserInDB, Depends(require_existing_username)]
 SignedInUser = Annotated[UserInDB, Depends(require_signed_in_user)]
 AdminUser = Annotated[UserInDB, Depends(require_admin_user)]
+ExistingDeck = Annotated[Deck, Depends(require_existing_deck)]
