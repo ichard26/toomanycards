@@ -8,8 +8,8 @@ tags_metadata = [
     {"name": "deck", "description": "Deck management."},
 ]
 app = FastAPI(
-    title="toomanycards",
-    description="The API powering toomanycards, an overengineered Quizlet replacement.",
+    title="TooManyCards API",
+    description="The API powering TooManyCards, an overengineered Quizlet replacement.",
     contact={"name": "Richard Si"},
     openapi_tags=tags_metadata\
 )
@@ -21,4 +21,4 @@ app.include_router(deck.router)
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to toomanycards's API 🌺."}
+    return {"message": "Welcome to TooManyCards's API 🌺."}

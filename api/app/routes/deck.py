@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 router = APIRouter(prefix="/deck", tags=["deck"])
 
+
 @router.get("/library")
 async def get_library():
     return {}
