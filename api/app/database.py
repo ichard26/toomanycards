@@ -17,7 +17,7 @@ class FileDB:
         try:
             self.data = json.loads(self.db_path.read_text("utf-8"))
         except FileNotFoundError:
-            self.data = {"data": {}, "internal": {}}
+            self.data = {"data": {"users": {}, "decks": {}}}
 
     def get(self, key: str) -> Any:
         return self.data["data"][key]

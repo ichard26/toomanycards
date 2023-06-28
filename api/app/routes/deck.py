@@ -49,8 +49,8 @@ async def get_deck(actor: deps.SignedInUser, deck: deps.ExistingDeck) -> Deck:
 
 
 @router.put("/{deck_id}")
-async def update_deck(deck_id: int):
-    return {}
+async def update_deck(actor: deps.SignedInUser, deck: deps.ExistingDeck) -> None:
+    deps.check_for_resource_owner_or_admin(deck.owner, actor)
 
 
 @router.delete("/{deck_id}")

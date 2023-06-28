@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from .constants import AUTH_ALGORITHM, AUTH_SECRET_KEY
-from .models import Deck, DeckID, User, UserInDB, get_deck_from_db, get_user_from_db
+from .models import Deck, User, UserInDB, get_deck_from_db, get_user_from_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
