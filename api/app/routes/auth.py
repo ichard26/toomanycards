@@ -94,18 +94,14 @@ async def login_for_access_token(
 
 @router.get("/user/{username}")
 async def get_user(actor: deps.SignedInUser, user: deps.ExistingUser) -> User:
-    if user.username != actor.username and not actor.is_admin:
-        raise HTTPException(status_code=403, detail="Resource does not belong to you.")
-
+    deps.check_for_resource_owner_or_admin(user.username, actor)
     return user
 
 
 @router.delete("/user/{username}")
 async def delete_user(actor: deps.SignedInUser, user: deps.ExistingUser) -> None:
     """Delete user from DB, not including owned decks."""
-    if user.username != actor.username and not actor.is_admin:
-        raise HTTPException(status_code=403, detail="Resource does not belong to you.")
-
+    deps.check_for_resource_owner_or_admin(user.username, actor)
     users = db.get("users")
     del users[user.username]
     db.commit()
