@@ -12,7 +12,7 @@ from typing_extensions import Annotated, Final
 
 from .. import dependencies as deps
 from ..constants import AUTH_SECRET_KEY, AUTH_ALGORITHM
-from ..database import db, fake_users_db
+from ..database import db
 from ..models import User, UserInDB, get_user_from_db
 
 ACCESS_TOKEN_EXPIRE_MINUTES: Final = 60 * 1

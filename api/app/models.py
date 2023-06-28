@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-from .database import db, fake_users_db
+from .database import db
 
 CardID = str
 DeckID = int
