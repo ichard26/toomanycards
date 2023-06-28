@@ -1,0 +1,8 @@
+fastapi >= 0.98.0
+uvicorn[standard]
+typing-extensions
+
+# For JWT user authentication.
+python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
