@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from .. import dependencies as deps
 from ..database import db
-from ..models import Deck, get_deck_from_db
+from ..models import Deck, DeckID, get_deck_from_db
 
 router = APIRouter(prefix="/deck", tags=["deck"])
 
@@ -28,7 +28,7 @@ async def create_deck(
     name: Annotated[str, Body(min_length=1)],
     description: Annotated[str, Body()],
     cards: Annotated[List[NewCard], Body()],
-) -> None:
+) -> DeckID:
     decks = db.get("decks")
     new_id = max([int(id) for id in decks] or [0]) + 1
     decks[new_id] = {
@@ -40,6 +40,7 @@ async def create_deck(
     }
     db.get("users")[user.username]["decks"].append(new_id)
     db.commit()
+    return new_id
 
 
 @router.get("/{deck_id}")
@@ -49,8 +50,21 @@ async def get_deck(actor: deps.SignedInUser, deck: deps.ExistingDeck) -> Deck:
 
 
 @router.put("/{deck_id}")
-async def update_deck(actor: deps.SignedInUser, deck: deps.ExistingDeck) -> None:
+async def replace_deck(
+    actor: deps.SignedInUser,
+    deck: deps.ExistingDeck,
+    name: Annotated[str, Body(min_length=1)],
+    description: Annotated[str, Body()],
+    cards: Annotated[List[NewCard], Body()],
+) -> None:
     deps.check_for_resource_owner_or_admin(deck.owner, actor)
+    original_deck = db.get("decks")[str(deck.id)]
+    original_deck["name"] = name
+    original_deck["description"] = description
+    original_deck["cards"] = [
+        {"id": str(uuid4()), "term": c.term, "definition": c.definition} for c in cards
+    ]
+    db.commit()
 
 
 @router.delete("/{deck_id}")

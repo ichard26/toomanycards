@@ -22,7 +22,7 @@ async def require_existing_username(username: Annotated[str, Path()]) -> UserInD
     raise HTTPException(status_code=404, detail="User not found")
 
 
-async def require_existing_deck(deck_id: Annotated[int, Path()]) -> Deck:
+async def require_existing_deck(deck_id: Annotated[int, Path(ge=1)]) -> Deck:
     if deck := get_deck_from_db(deck_id):
         return deck
 
