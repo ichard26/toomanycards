@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+import time
+
+from fastapi import FastAPI, Request
 
 from .routes import admin, auth, deck
 
@@ -25,6 +27,15 @@ app = FastAPI(
 app.include_router(admin.router)
 app.include_router(auth.router)
 app.include_router(deck.router)
+
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    process_time = time.perf_counter() - start_time
+    response.headers["Server-Timing"] = f"total;dur={process_time * 1000:.1f}"
+    return response
 
 
 @app.get("/")
