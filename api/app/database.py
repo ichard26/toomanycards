@@ -38,6 +38,7 @@ from .utils import flatten
 # 	"useragent"	TEXT,
 # 	"verb"	TEXT NOT NULL,
 # 	"path"	TEXT NOT NULL,
+# 	"code"	INTEGER NOT NULL,
 # 	"duration"	REAL NOT NULL,
 # ) WITHOUT ROWID;
 

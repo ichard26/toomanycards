@@ -46,11 +46,12 @@ async def add_process_time_header(request: Request, call_next):
             request.headers.get("User-Agent"),
             request.method,
             request.url.path,
+            response.status_code,
             elapsed,
         )
         db.execute("""
-            INSERT INTO requests(datetime, useragent, verb, path, duration)
-            VALUES(?, ?, ?, ?, ?);
+            INSERT INTO requests(datetime, useragent, verb, path, code, duration)
+            VALUES(?, ?, ?, ?, ?, ?);
             """, entry)
         db.commit()
     finally:
