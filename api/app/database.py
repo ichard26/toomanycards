@@ -32,6 +32,14 @@ from .utils import flatten
 # 	"definition"       TEXT NOT NULL,
 # 	FOREIGN KEY("deck_id") REFERENCES "decks"("id")
 # );
+#
+# CREATE TABLE "requests" (
+# 	"datetime"	TEXT PRIMARY KEY NOT NULL,
+# 	"useragent"	TEXT,
+# 	"verb"	TEXT NOT NULL,
+# 	"path"	TEXT NOT NULL,
+# 	"duration"	REAL NOT NULL,
+# ) WITHOUT ROWID;
 
 
 class SQLiteConnection(sqlite3.Connection):
