@@ -1,5 +1,4 @@
-from typing import List
-from typing_extensions import Annotated
+from typing import Annotated
 
 from fastapi import APIRouter, Body
 from pydantic import BaseModel
@@ -17,7 +16,7 @@ class NewCard(BaseModel):
 
 
 @router.get("/library")
-async def get_deck_library(user: deps.SignedInUser, db: deps.DBConnection) -> List[Deck]:
+async def get_deck_library(user: deps.SignedInUser, db: deps.DBConnection) -> list[Deck]:
     return [db.get_deck(id) for id in user.decks]
 
 
@@ -26,7 +25,7 @@ async def create_deck(
     actor: deps.SignedInUser,
     name: Annotated[str, Body(min_length=1)],
     description: Annotated[str, Body()],
-    cards: Annotated[List[NewCard], Body()],
+    cards: Annotated[list[NewCard], Body()],
     db: deps.DBConnection,
 ) -> DeckID:
     with db:
@@ -54,7 +53,7 @@ async def replace_deck(
     deck: deps.ExistingDeck,
     name: Annotated[str, Body(min_length=1)],
     description: Annotated[str, Body()],
-    cards: Annotated[List[NewCard], Body()],
+    cards: Annotated[list[NewCard], Body()],
     db: deps.DBConnection,
 ) -> None:
     deps.check_for_resource_owner_or_admin(deck.owner, actor)

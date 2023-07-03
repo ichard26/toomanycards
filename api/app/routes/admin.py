@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import APIRouter
 
 from .. import dependencies as deps
@@ -10,7 +8,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @router.get("/list-users")
-async def list_users(_: deps.AdminUser, db: deps.DBConnection) -> List[User]:
+async def list_users(_: deps.AdminUser, db: deps.DBConnection) -> list[User]:
     users = []
     for row in db.execute("SELECT * FROM users;"):
         cur = db.execute("SELECT id FROM decks WHERE owner = ?;", [row["username"]])
@@ -19,7 +17,7 @@ async def list_users(_: deps.AdminUser, db: deps.DBConnection) -> List[User]:
 
 
 @router.get("/list-decks")
-async def list_decks(_: deps.AdminUser, db: deps.DBConnection) -> List[Deck]:
+async def list_decks(_: deps.AdminUser, db: deps.DBConnection) -> list[Deck]:
     decks = []
     for row in db.execute("SELECT * FROM decks;"):
         cur = db.execute("SELECT * FROM cards WHERE deck_id = ?;", [row["id"]])

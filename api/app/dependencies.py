@@ -1,5 +1,5 @@
 import sqlite3
-from typing_extensions import Annotated
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, Path, status
 from fastapi.security import OAuth2PasswordBearer

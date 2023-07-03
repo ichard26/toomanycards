@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -19,7 +19,7 @@ class Deck(BaseModel):
     created_at: str
     name: str
     description: str
-    cards: List[Card]
+    cards: list[Card]
 
 
 class User(BaseModel):
@@ -28,7 +28,7 @@ class User(BaseModel):
     is_admin: bool
     created_at: str
 
-    decks: List[DeckID]
+    decks: list[DeckID]
 
 
 class UserInDB(User):
