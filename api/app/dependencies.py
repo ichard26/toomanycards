@@ -77,7 +77,7 @@ async def require_admin_user(user: Annotated[UserInDB, Depends(require_signed_in
     return user
 
 
+ExistingDeck = Annotated[Deck, Depends(require_existing_deck)]
 ExistingUser = Annotated[UserInDB, Depends(require_existing_username)]
 SignedInUser = Annotated[UserInDB, Depends(require_signed_in_user)]
-AdminUser = Annotated[UserInDB, Depends(require_admin_user)]
-ExistingDeck = Annotated[Deck, Depends(require_existing_deck)]
+SignedInAdmin = Annotated[UserInDB, Depends(require_admin_user)]
