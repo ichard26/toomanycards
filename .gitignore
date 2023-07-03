@@ -56,3 +56,7 @@ dmypy.json
 # Editor configuration / junk
 .vscode/
 **/*.swp
+
+**/*.db
+**/*.sqlite
+**/*.sqlite3

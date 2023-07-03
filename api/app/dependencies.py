@@ -1,3 +1,4 @@
+import sqlite3
 from typing_extensions import Annotated
 
 from fastapi import Depends, HTTPException, Path, status
@@ -5,7 +6,8 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from .constants import AUTH_ALGORITHM, AUTH_SECRET_KEY
-from .models import Deck, User, UserInDB, get_deck_from_db, get_user_from_db
+from .database import open_sqlite_connection
+from .models import Deck, User, UserInDB
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -15,21 +17,38 @@ def check_for_resource_owner_or_admin(resource_owner, actor: User) -> None:
         raise HTTPException(status_code=403, detail="Resource does not belong to you.")
 
 
-async def require_existing_username(username: Annotated[str, Path()]) -> UserInDB:
-    if user := get_user_from_db(username):
+async def setup_database_connection() -> sqlite3.Connection:
+    con = open_sqlite_connection()
+    try:
+        yield con
+    finally:
+        con.close()
+
+
+DBConnection = Annotated[sqlite3.Connection, Depends(setup_database_connection)]
+
+
+async def require_existing_username(
+    username: Annotated[str, Path()], db: DBConnection
+) -> UserInDB:
+    if user := db.get_user(username):
         return user
 
     raise HTTPException(status_code=404, detail="User not found")
 
 
-async def require_existing_deck(deck_id: Annotated[int, Path(ge=1)]) -> Deck:
-    if deck := get_deck_from_db(deck_id):
+async def require_existing_deck(
+    deck_id: Annotated[int, Path(ge=1)], db: DBConnection
+) -> Deck:
+    if deck := db.get_deck(deck_id):
         return deck
 
     raise HTTPException(status_code=404, detail="Deck not found")
 
 
-async def require_signed_in_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserInDB:
+async def require_signed_in_user(
+    token: Annotated[str, Depends(oauth2_scheme)], db: DBConnection,
+) -> UserInDB:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -44,7 +63,7 @@ async def require_signed_in_user(token: Annotated[str, Depends(oauth2_scheme)]) 
     except JWTError:
         raise credentials_exception
 
-    user = get_user_from_db(username)
+    user = db.get_user(username)
     if user is None:
         raise credentials_exception
 

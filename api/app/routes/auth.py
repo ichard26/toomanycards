@@ -1,23 +1,22 @@
 # Referenced resources:
 # - https://jwt.io/introduction
+# - https://passlib.readthedocs.io/en/stable/
 
 from datetime import datetime, timedelta, timezone
-from typing_extensions import Annotated, Final
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
-from jose import jwt
+from jose import jwt as jwtlib
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from .. import dependencies as deps
-from ..constants import AUTH_ALGORITHM, AUTH_SECRET_KEY
-from ..database import db
-from ..models import User, get_user_from_db
+from ..constants import AUTH_ALGORITHM, AUTH_SECRET_KEY, AUTH_TOKEN_EXPIRE_MINUTES
+from ..models import User
+from ..utils import current_datetime_stamp
 
-ACCESS_TOKEN_EXPIRE_MINUTES: Final = 60 * 1
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+passlib_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter(tags=["auth"])
 
 
@@ -26,70 +25,60 @@ class Token(BaseModel):
     token_type: str
 
 
-def authenticate_user(username: str, password: str):
-    user = get_user_from_db(username)
-    if user is None:
-        return False
-    if not pwd_context.verify(password, user.hashed_password):
-        return False
-
-    return user
+def authenticate_user(username: str, password: str, db) -> bool:
+    user = db.get_user(username)
+    return user and passlib_context.verify(password, user.hashed_password)
 
 
-def create_access_token(data: dict, expires_delta: timedelta) -> str:
-    to_encode = data.copy()
-    to_encode.update({"exp": datetime.now(timezone.utc) + expires_delta})
-    return jwt.encode(to_encode, AUTH_SECRET_KEY, algorithm=AUTH_ALGORITHM)
+def create_access_token(
+    username: str,
+    expires_delta: timedelta = timedelta(minutes=AUTH_TOKEN_EXPIRE_MINUTES)
+) -> Token:
+    to_encode = {"sub": username, "exp": datetime.now(timezone.utc) + expires_delta}
+    jwt = jwtlib.encode(to_encode, AUTH_SECRET_KEY, algorithm=AUTH_ALGORITHM)
+    return Token(access_token=jwt, token_type="bearer")
 
 
-def login(username: str, password: str):
-    user = authenticate_user(username, password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-
-@router.post("/signup", status_code=201, response_model=Token)
+@router.post("/signup", status_code=201)
 async def create_new_user(
     username: Annotated[str, Form(max_length=20, regex=r"^[a-zA-Z\.]+$")],
     password: Annotated[str, Form()],
     full_name: Annotated[str, Form()],
-    challenge: Annotated[int, Query()],
+    challenge: Annotated[int, Query(gt=25, lt=27)],
+    db: deps.DBConnection,
 ) -> Token:
-    if challenge != 26:
-        raise HTTPException(status_code=400, detail="Challenge failed (should be integer 26).")
-
-    users = db.get("users")
-    if username in users:
+    if db.get_user(username) is not None:
         raise HTTPException(status_code=400, detail="Username already exists!")
 
-    users[username] = {
+    data = {
         "username": username,
+        "password": passlib_context.hash(password),
         "full_name": full_name,
         "is_admin": False,
-        "decks": [],
-        "hashed_password": pwd_context.hash(password),
+        "created_at": current_datetime_stamp(),
     }
-
-    token = login(username, password)
+    db.execute("""
+        INSERT INTO users (username, hashed_password, full_name, is_admin, created_at)
+        VALUES (:username, :password, :full_name, :is_admin, :created_at);
+    """, data)
+    token = create_access_token(username)
     db.commit()
     return token
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login")
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
-):
-    return login(form_data.username, form_data.password)
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: deps.DBConnection,
+) -> Token:
+    if authenticate_user(form_data.username, form_data.password, db):
+        return create_access_token(form_data.username)
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Incorrect username or password",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 @router.get("/user/{username}")
@@ -99,9 +88,8 @@ async def get_user(actor: deps.SignedInUser, user: deps.ExistingUser) -> User:
 
 
 @router.delete("/user/{username}")
-async def delete_user(actor: deps.SignedInUser, user: deps.ExistingUser) -> None:
+async def delete_user(actor: deps.SignedInUser, user: deps.ExistingUser, db: deps.DBConnection) -> None:
     """Delete user from DB, not including owned decks."""
     deps.check_for_resource_owner_or_admin(user.username, actor)
-    users = db.get("users")
-    del users[user.username]
+    db.execute("DELETE FROM users WHERE username = ?;", [user.username])
     db.commit()
