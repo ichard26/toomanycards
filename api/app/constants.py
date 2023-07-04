@@ -4,6 +4,27 @@ from typing import Final
 
 ROOT_DIR: Final = Path(__file__).parent.parent.parent
 
+LOG_CONFIG: Final = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "()": "app.utils.AppLogFormatter",
+            "fmt": "%(levelprefix)s [%(name)s] %(message)s",
+        },
+    },
+    "handlers": {
+        "default": {
+            "formatter": "default",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stderr",
+        },
+    },
+    "loggers": {
+        "app": {"handlers": ["default"], "level": "INFO", "propagate": False},
+    },
+}
+
 if (_db_path := os.getenv("TMC_DATABASE_PATH")) is not None:
     DATABASE_PATH: Final = Path(_db_path)
 else:

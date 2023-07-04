@@ -3,6 +3,7 @@
 # - https://passlib.readthedocs.io/en/stable/
 
 from datetime import datetime, timedelta, timezone
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, status
@@ -16,6 +17,7 @@ from ..constants import AUTH_ALGORITHM, AUTH_SECRET_KEY, AUTH_TOKEN_EXPIRE_MINUT
 from ..models import User
 from ..utils import current_datetime_stamp
 
+logger = logging.getLogger(__name__)
 passlib_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter(tags=["auth"])
 

@@ -5,3 +5,9 @@ uvicorn[standard]
 python-multipart
 python-jose[cryptography]
 passlib[bcrypt]
+
+# For logging (mhmm).
+click >= 8.0.0
+
+# TIP : to optimize production environments, uninstall these packages:
+#     | watchfiles PyYAML websockets

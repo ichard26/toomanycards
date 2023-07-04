@@ -1,13 +1,17 @@
+import logging
 import time
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
 
+from .constants import LOG_CONFIG
 from .database import open_sqlite_connection
 from .routes import admin, auth, deck
 from .utils import current_datetime_stamp
 
 __version__ = "0.1.0"
+
+logging.config.dictConfig(LOG_CONFIG)
 
 description = """\
 The API powering TooManyCards, an overengineered Quizlet replacement.
