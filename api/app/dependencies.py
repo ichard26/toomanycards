@@ -3,11 +3,10 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Path, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 
-from .constants import AUTH_ALGORITHM, AUTH_SECRET_KEY
 from .database import open_sqlite_connection
-from .models import Deck, User, UserInDB
+from .models import Deck, SignInSession, User, UserInDB
+from .utils import utc_now
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -51,23 +50,19 @@ async def require_signed_in_user(
 ) -> UserInDB:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="Could not validate credentials (invalid or expired session ID)",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    try:
-        payload = jwt.decode(token, AUTH_SECRET_KEY, algorithms=[AUTH_ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except JWTError:
+    row = db.execute("SELECT * FROM sessions WHERE id = ?;", [token]).fetchone()
+    if row is None:
         raise credentials_exception
 
-    user = db.get_user(username)
-    if user is None:
+    session = SignInSession(**row)
+    if utc_now() > session.expired_at:
         raise credentials_exception
 
-    return user
+    return db.get_user(session.username)
 
 
 async def require_admin_user(user: Annotated[UserInDB, Depends(require_signed_in_user)]) -> UserInDB:

@@ -1,3 +1,4 @@
+import datetime
 from typing import Optional
 
 from pydantic import BaseModel
@@ -33,3 +34,10 @@ class User(BaseModel):
 
 class UserInDB(User):
     hashed_password: str
+
+
+class SignInSession(BaseModel):
+    id: str
+    username: Username
+    created_at: datetime.datetime
+    expired_at: datetime.datetime

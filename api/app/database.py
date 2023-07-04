@@ -7,7 +7,7 @@ from . import constants
 from .models import Deck, DeckID, UserInDB, Username
 from .utils import flatten
 
-# Relational database schema.
+# SQLite database schema.
 #
 # CREATE TABLE "users" (
 # 	"username"         TEXT PRIMARY KEY NOT NULL,
@@ -41,6 +41,14 @@ from .utils import flatten
 # 	"path"	TEXT NOT NULL,
 # 	"code"	INTEGER NOT NULL,
 # 	"duration"	REAL NOT NULL,
+# ) WITHOUT ROWID;
+#
+# CREATE TABLE "sessions" (
+# 	"id"	TEXT PRIMARY KEY NOT NULL,
+# 	"username"	TEXT NOT NULL,
+# 	"created_at"	TEXT NOT NULL,
+# 	"expired_at"	TEXT NOT NULL,
+# 	FOREIGN KEY("username") REFERENCES "users"("username")
 # ) WITHOUT ROWID;
 
 
@@ -87,6 +95,7 @@ class SQLiteConnection(sqlite3.Connection):
 def open_sqlite_connection() -> sqlite3.Connection:
     con = sqlite3.connect(constants.DATABASE_PATH, factory=SQLiteConnection)
     con.execute("PRAGMA foreign_keys = ON;")
+    con.execute("PRAGMA secure_delete = OFF;")
     con.row_factory = sqlite3.Row
     con.backup_after_commit = constants.DATABASE_BACKUP
     con.backup_path = constants.DATABASE_BACKUP_PATH

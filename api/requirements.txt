@@ -1,9 +1,8 @@
 fastapi >= 0.98.0
 uvicorn[standard]
 
-# For JWT user authentication.
+# For user authentication.
 python-multipart
-python-jose[cryptography]
 passlib[bcrypt]
 
 # For logging (mhmm).

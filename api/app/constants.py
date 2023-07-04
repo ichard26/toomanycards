@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 from typing import Final
 
@@ -33,6 +34,5 @@ else:
 DATABASE_BACKUP: Final = False
 DATABASE_BACKUP_PATH: Final = DATABASE_PATH.with_stem(DATABASE_PATH.stem + "-backup")
 
-AUTH_ALGORITHM: Final = "HS256"
-AUTH_SECRET_KEY: Final = "7c3c743d58707f77168b31fb38e0cbcd3ad3ccb071011dae539898806d05b8e5"
-AUTH_TOKEN_EXPIRE_MINUTES: Final = 60 * 1
+AUTH_TOKEN_EXPIRE_DELTA: Final = timedelta(minutes=60)
+AUTH_TOKEN_PURGE_DELTA: Final = timedelta(0)

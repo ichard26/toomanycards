@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from .. import dependencies as deps
-from ..models import Deck, User
+from ..models import Deck, SignInSession, User
 from ..utils import flatten
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -23,3 +23,8 @@ async def list_decks(_: deps.SignedInAdmin, db: deps.DBConnection) -> list[Deck]
         cur = db.execute("SELECT * FROM cards WHERE deck_id = ?;", [row["id"]])
         decks.append(Deck(**row, cards=list(cur)))
     return decks
+
+
+@router.get("/list-sessions")
+async def list_sessions(_: deps.SignedInAdmin, db: deps.DBConnection) -> list[SignInSession]:
+    return [SignInSession(**row) for row in db.execute("SELECT * from sessions;")]

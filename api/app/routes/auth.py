@@ -2,19 +2,19 @@
 # - https://jwt.io/introduction
 # - https://passlib.readthedocs.io/en/stable/
 
-from datetime import datetime, timedelta, timezone
 import logging
+import secrets
+from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordRequestForm
-from jose import jwt as jwtlib
 from passlib.context import CryptContext
 from pydantic import BaseModel
 
 from .. import dependencies as deps
-from ..constants import AUTH_ALGORITHM, AUTH_SECRET_KEY, AUTH_TOKEN_EXPIRE_MINUTES
-from ..models import User
+from ..constants import AUTH_TOKEN_EXPIRE_DELTA, AUTH_TOKEN_PURGE_DELTA
+from ..models import SignInSession, User
 from ..utils import utc_now
 
 logger = logging.getLogger(__name__)
@@ -33,12 +33,26 @@ def authenticate_user(username: str, password: str, db) -> bool:
 
 
 def create_access_token(
-    username: str,
-    expires_delta: timedelta = timedelta(minutes=AUTH_TOKEN_EXPIRE_MINUTES)
+    username: str, expiry_delta: timedelta, db: deps.DBConnection
 ) -> Token:
-    to_encode = {"sub": username, "exp": datetime.now(timezone.utc) + expires_delta}
-    jwt = jwtlib.encode(to_encode, AUTH_SECRET_KEY, algorithm=AUTH_ALGORITHM)
-    return Token(access_token=jwt, token_type="bearer")
+    session_id = secrets.token_hex()
+    creation_datetime = utc_now()
+    with db:
+        db.execute(
+            "INSERT INTO sessions(id, username, created_at, expired_at) VALUES(?, ?, ?, ?)",
+            (session_id, username, creation_datetime, creation_datetime + expiry_delta)
+        )
+    return Token(access_token=session_id, token_type="bearer")
+
+
+async def purge_expired_sessions(purge_delta: timedelta, db: deps.DBConnection) -> None:
+    for row in db.execute("SELECT * FROM sessions;"):
+        session = SignInSession(**row)
+        if (session.expired_at + purge_delta) < utc_now():
+            created_at = session.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            logger.info(f"Purging session ({session.username}) from {created_at} - {session.id}")
+            db.execute("DELETE FROM sessions WHERE id = ?;", [session.id])
+            db.commit()
 
 
 @router.post("/signup", status_code=201)
@@ -63,7 +77,7 @@ async def create_new_user(
         INSERT INTO users (username, hashed_password, full_name, is_admin, created_at)
         VALUES (:username, :password, :full_name, :is_admin, :created_at);
     """, data)
-    token = create_access_token(username)
+    token = create_access_token(username, AUTH_TOKEN_EXPIRE_DELTA, db)
     db.commit()
     return token
 
@@ -72,9 +86,11 @@ async def create_new_user(
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: deps.DBConnection,
+    background_tasks: BackgroundTasks,
 ) -> Token:
     if authenticate_user(form_data.username, form_data.password, db):
-        return create_access_token(form_data.username)
+        background_tasks.add_task(purge_expired_sessions, AUTH_TOKEN_PURGE_DELTA, db)
+        return create_access_token(form_data.username, AUTH_TOKEN_EXPIRE_DELTA, db)
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
