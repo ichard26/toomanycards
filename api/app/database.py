@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -41,6 +42,14 @@ from .utils import flatten
 # 	"code"	INTEGER NOT NULL,
 # 	"duration"	REAL NOT NULL,
 # ) WITHOUT ROWID;
+
+
+def adapt_datetime_iso(dt: datetime) -> str:
+    """Adapt datetime.datetime to a ISO 8601 date."""
+    return dt.isoformat()
+
+
+sqlite3.register_adapter(datetime, adapt_datetime_iso)
 
 
 class SQLiteConnection(sqlite3.Connection):

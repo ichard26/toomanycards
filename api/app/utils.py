@@ -15,8 +15,8 @@ def flatten(iterables: Iterable[Iterable[T]]) -> list[T]:
     return list(itertools.chain.from_iterable(iterables))
 
 
-def current_datetime_stamp() -> str:
-    return datetime.now(timezone.utc).isoformat()
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class AppLogFormatter(uvicorn.logging.DefaultFormatter):

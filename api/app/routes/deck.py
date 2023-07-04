@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 from .. import dependencies as deps
 from ..models import Deck, DeckID
-from ..utils import current_datetime_stamp
+from ..utils import utc_now
 
 router = APIRouter(prefix="/deck", tags=["deck"])
 
@@ -31,7 +31,7 @@ async def create_deck(
     with db:
         db.execute(
             "INSERT INTO decks (owner, name, description, created_at) VALUES(?, ?, ?, ?);",
-            (actor.username, template.name, template.description, current_datetime_stamp()),
+            (actor.username, template.name, template.description, utc_now()),
         )
         deck_id = db.execute("SELECT id FROM decks ORDER BY id DESC LIMIT 1;").fetchone()[0]
         db.executemany(

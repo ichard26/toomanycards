@@ -7,7 +7,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from .constants import LOG_CONFIG
 from .database import open_sqlite_connection
 from .routes import admin, auth, deck
-from .utils import current_datetime_stamp
+from .utils import utc_now
 
 __version__ = "0.1.0"
 
@@ -46,7 +46,7 @@ async def add_process_time_header(request: Request, call_next):
     db = open_sqlite_connection()
     try:
         entry = (
-            current_datetime_stamp(),
+            utc_now(),
             request.headers.get("User-Agent"),
             request.method,
             request.url.path,

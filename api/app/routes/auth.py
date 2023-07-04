@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from .. import dependencies as deps
 from ..constants import AUTH_ALGORITHM, AUTH_SECRET_KEY, AUTH_TOKEN_EXPIRE_MINUTES
 from ..models import User
-from ..utils import current_datetime_stamp
+from ..utils import utc_now
 
 logger = logging.getLogger(__name__)
 passlib_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -57,7 +57,7 @@ async def create_new_user(
         "password": passlib_context.hash(password),
         "full_name": full_name,
         "is_admin": False,
-        "created_at": current_datetime_stamp(),
+        "created_at": utc_now(),
     }
     db.execute("""
         INSERT INTO users (username, hashed_password, full_name, is_admin, created_at)
