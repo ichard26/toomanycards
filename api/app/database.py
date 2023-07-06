@@ -36,6 +36,7 @@ from .utils import flatten
 #
 # CREATE TABLE "requests" (
 # 	"datetime"	TEXT PRIMARY KEY NOT NULL,
+# 	"ip"            TEXT,
 # 	"useragent"	TEXT,
 # 	"verb"	TEXT NOT NULL,
 # 	"path"	TEXT NOT NULL,
