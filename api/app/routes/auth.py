@@ -57,12 +57,13 @@ async def purge_expired_sessions(purge_delta: timedelta, db: deps.DBConnection) 
 
 @router.post("/signup", status_code=201)
 async def create_new_user(
-    username: Annotated[str, Form(max_length=20, regex=r"^[a-zA-Z\.]+$")],
-    password: Annotated[str, Form()],
-    full_name: Annotated[str, Form()],
+    username: Annotated[str, Form(min_length=1, max_length=20, regex=r"^[a-z\.-]+$")],
+    password: Annotated[str, Form(min_length=1, max_length=100)],
+    full_name: Annotated[str, Form(max_length=50)],
     challenge: Annotated[int, Query(gt=25, lt=27)],
     db: deps.DBConnection,
 ) -> Token:
+    username = username.lower()
     if db.get_user(username) is not None:
         raise HTTPException(status_code=400, detail="Username already exists!")
 
@@ -84,13 +85,18 @@ async def create_new_user(
 
 @router.post("/login")
 async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    form: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: deps.DBConnection,
     background_tasks: BackgroundTasks,
 ) -> Token:
-    if authenticate_user(form_data.username, form_data.password, db):
+    if authenticate_user(form.username, form.password, db):
+        sessions_cur = db.execute("SELECT * FROM sessions WHERE username = ?;", [form.username])
+        # TODO: don't count expired sessions against this limit.
+        if len(sessions_cur.fetchall()) >= 15:
+            raise HTTPException(429, detail="Too many registered sessions")
+
         background_tasks.add_task(purge_expired_sessions, AUTH_TOKEN_PURGE_DELTA, db)
-        return create_access_token(form_data.username, AUTH_TOKEN_EXPIRE_DELTA, db)
+        return create_access_token(form.username, AUTH_TOKEN_EXPIRE_DELTA, db)
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

@@ -1,5 +1,5 @@
-from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field, validator
 
 from .. import dependencies as deps
 from ..models import Deck, DeckID
@@ -9,25 +9,35 @@ router = APIRouter(prefix="/deck", tags=["deck"])
 
 
 class CardTemplate(BaseModel):
-    term: str
-    definition: str
+    term: str = Field(min_length=1, max_length=50)
+    definition: str = Field(min_length=1, max_length=50)
 
 
 class DeckTemplate(BaseModel):
-    name: str = Field(min_length=1)
-    description: str
+    name: str = Field(min_length=1, max_length=50)
+    description: str = Field(max_length=200)
     cards: list[CardTemplate]
+
+    @validator("cards")
+    def cards_length_check(cls, v):
+        if (length := len(v)) > 100:
+            raise ValueError(f"Deck can only contain up to 100 cards, not {length}")
+        return v
 
 
 @router.get("/library")
-async def get_deck_library(user: deps.SignedInUser, db: deps.DBConnection) -> list[Deck]:
-    return [db.get_deck(id) for id in user.decks]
+async def get_deck_library(actor: deps.SignedInUser, db: deps.DBConnection) -> list[Deck]:
+    return [db.get_deck(id) for id in actor.decks]
 
 
 @router.post("/new", status_code=201)
 async def create_deck(
     actor: deps.SignedInUser, template: DeckTemplate, db: deps.DBConnection
 ) -> DeckID:
+    deck_library = await get_deck_library(actor, db)
+    if len(deck_library) >= 50:
+        raise HTTPException(400, detail="Reached maximum deck count")
+
     with db:
         db.execute(
             "INSERT INTO decks (owner, name, description, created_at) VALUES(?, ?, ?, ?);",

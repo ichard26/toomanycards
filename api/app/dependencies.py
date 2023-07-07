@@ -28,7 +28,7 @@ DBConnection = Annotated[sqlite3.Connection, Depends(setup_database_connection)]
 
 
 async def require_existing_username(
-    username: Annotated[str, Path()], db: DBConnection
+    username: Annotated[str, Path(max_length=20)], db: DBConnection
 ) -> UserInDB:
     if user := db.get_user(username):
         return user
