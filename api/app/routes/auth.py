@@ -7,7 +7,7 @@ import secrets
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Query, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from pydantic import BaseModel
@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from .. import dependencies as deps
 from ..constants import AUTH_TOKEN_EXPIRE_DELTA, AUTH_TOKEN_PURGE_DELTA
 from ..models import SignInSession, User
-from ..utils import utc_now
+from ..utils import RateLimiter, utc_now
 
 logger = logging.getLogger(__name__)
 passlib_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -62,7 +62,12 @@ async def create_new_user(
     full_name: Annotated[str, Form(max_length=50)],
     challenge: Annotated[int, Query(gt=25, lt=27)],
     db: deps.DBConnection,
+    request: Request,
 ) -> Token:
+    limiter = RateLimiter("signup", {RateLimiter.DAY: 5}, db)
+    if limiter.update_and_check(request.client.host):
+        raise HTTPException(429)
+
     username = username.lower()
     if db.get_user(username) is not None:
         raise HTTPException(status_code=400, detail="Username already exists!")
@@ -87,8 +92,13 @@ async def create_new_user(
 async def login_for_access_token(
     form: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: deps.DBConnection,
+    request: Request,
     background_tasks: BackgroundTasks,
 ) -> Token:
+    limiter = RateLimiter("login:failed-attempt", {RateLimiter.DAY: 10}, db)
+    if limiter.should_block(request.client.host) or limiter.should_block(form.username):
+        raise HTTPException(429)
+
     if authenticate_user(form.username, form.password, db):
         sessions_cur = db.execute("SELECT * FROM sessions WHERE username = ?;", [form.username])
         # TODO: don't count expired sessions against this limit.
@@ -98,6 +108,8 @@ async def login_for_access_token(
         background_tasks.add_task(purge_expired_sessions, AUTH_TOKEN_PURGE_DELTA, db)
         return create_access_token(form.username, AUTH_TOKEN_EXPIRE_DELTA, db)
 
+    limiter.update(request.client.host)
+    limiter.update(form.username)
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Incorrect username or password",
