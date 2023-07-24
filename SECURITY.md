@@ -20,25 +20,25 @@ enjoy my (probably naive) notes on the security posture of TMC. 🌺
 
 > TMC's authentication design came from [this dev.to article][dev-to-auth].
 
-TMC uses both session IDs and refresh cookies for authentication. Upon logging in, TMC's
-API returns a session ID and a refresh cookie.
+TMC uses both access tokens and refresh cookies for authentication. Upon logging in, TMC's
+API returns an access token and a refresh cookie.
 
-Session IDs are used to authenticate with the API. They are short-lived and only stored in
-memory to avoid CSRF (and localStorage attacks). Once expired, the frontend MUST request a
-new session (POST `/api/refresh-session`) using the refresh 🍪.
+Access tokens are used to authenticate with the API. They are short-lived and only stored
+in memory to avoid CSRF (and localStorage attacks). Once expired, the frontend MUST
+request a new access token (POST `/api/refresh-session`) using the refresh 🍪.
 
 The 🍪 is secured with the `HttpOnly`, `SameSite=lax`, and `Secure` flags. And since it can
 only access the `/api/refresh-session` endpoint, a CSRF wouldn't be able to do anything
-than generate a new session ID that's unreadable due to the Same Origin Policy.
+than generate a new access token that's unreadable due to the Same Origin Policy.
 
 On the first visit, the frontend will attempt refreshing the session to obtain a new
 session ID for future use. If the user has logged in previously, the refresh 🍪 will be
 passed along, allowing the refresh request to succeed. Otherwise, the API will return 401
 Unauthorized and logging in will be required.
 
-The session ID is bound to the refresh 🍪. Refreshing the session ID will invalidate the
-previous session ID bound to the 🍪 regardless if it has expired or not. Both tokens are
-generated from a (presumably high quality) CSPRNG via the
+The access token is bound to the refresh 🍪. Refreshing the access token will invalidate
+the previous access token bound to the 🍪 regardless if it has expired or not. Both tokens
+are generated from a (presumably high quality) CSPRNG via the
 [`secrets.token_hex()`][token_hex] function.
 
 > **Note**: yes, I know this sounds inefficient and janky, but it's easy to implement and
@@ -61,6 +61,9 @@ problems if TMC was vulnerable to XSS).
 # https://www.toptal.com/cyber-security/10-most-common-web-security-vulnerabilities
 # https://owasp.org/www-community/attacks/
 # https://cheatsheetseries.owasp.org/
+# https://codahale.com/a-lesson-in-timing-attacks/
+# https://developer.okta.com/blog/2017/06/21/what-the-heck-is-oauth
+# https://auth0.com/intro-to-iam/what-is-oauth-2
 
 -->
 
@@ -106,8 +109,8 @@ checking how long `/api/login` takes to respond with 401 Unauthorized (although
 
 ## Notes on defense in depth mitigations
 
-Nothing here is meant to be bullet-proof, but these should make TMC harder to abuse
-and attack.
+Nothing here is meant to be bullet-proof, but these should make TMC harder to abuse and
+attack.
 
 - Security headers
 - Charset
@@ -124,7 +127,7 @@ that add data to the DB have absolute limits or are rate limited.
 - User, deck, and card fields are validated and must conform to length minimums and
   maximums
 - An user can own at most 50 decks, and each deck can at most contain 100 cards
-- An user can only have at most 15 registered sessions at once
+- An user can only have at most 50 registered sessions at once
 - Invalid user logins are rate limited by request and username independently, after which
   all login attempts are blocked until the rate limit expires
 - User sign-ups are rate limited by request IP

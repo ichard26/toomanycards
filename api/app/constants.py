@@ -26,6 +26,8 @@ LOG_CONFIG: Final = {
     },
 }
 
+# --- Database --- #
+
 if (_db_path := os.getenv("TMC_DATABASE_PATH")) is not None:
     DATABASE_PATH: Final = Path(_db_path)
 else:
@@ -34,5 +36,10 @@ else:
 DATABASE_BACKUP: Final = False
 DATABASE_BACKUP_PATH: Final = DATABASE_PATH.with_stem(DATABASE_PATH.stem + "-backup")
 
-AUTH_TOKEN_EXPIRE_DELTA: Final = timedelta(minutes=60)
-AUTH_TOKEN_PURGE_DELTA: Final = timedelta(0)
+# --- Authentication --- #
+
+ACCESS_TOKEN_LIFETIME: Final = timedelta(minutes=30)
+MAX_SESSIONS: Final = 50
+REFRESH_COOKIE_NAME: Final = "RefreshToken"
+SESSION_LIFETIME: Final = timedelta(days=1)
+SESSION_PURGE_DELTA: Final = timedelta(days=2)

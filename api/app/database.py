@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Optional
 
 from . import constants
-from .models import Deck, DeckID, UserInDB, Username
-from .utils import flatten
+from .models import AuthSession, Deck, DeckID, UserInDB, Username
+from .utils import flatten, utc_now
 
 
 def adapt_datetime_iso(dt: datetime) -> str:
@@ -46,6 +46,19 @@ class SQLiteConnection(sqlite3.Connection):
             return Deck(**row, cards=list(cur))
         else:
             return None
+
+    def get_sign_in_sessions(
+        self, username: Optional[Username], include_expired: bool = True
+    ) -> list[AuthSession]:
+        if username is not None:
+            cur = self.execute("SELECT * FROM sessions WHERE username = ?;", [username])
+        else:
+            cur = self.execute("SELECT * FROM sessions;")
+        sessions = [AuthSession(**row) for row in cur]
+        if include_expired:
+            return sessions
+        else:
+            return [s for s in sessions if utc_now() < s.refresh_expiry]
 
 
 def open_sqlite_connection() -> sqlite3.Connection:

@@ -1,30 +1,37 @@
-# Referenced resources:
-# - https://jwt.io/introduction
-# - https://passlib.readthedocs.io/en/stable/
-
 import logging
 import secrets
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Query, Request, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from passlib.context import CryptContext
-from pydantic import BaseModel
 
 from .. import dependencies as deps
-from ..constants import AUTH_TOKEN_EXPIRE_DELTA, AUTH_TOKEN_PURGE_DELTA
-from ..models import SignInSession, User
+from ..constants import (
+    ACCESS_TOKEN_LIFETIME,
+    MAX_SESSIONS,
+    REFRESH_COOKIE_NAME,
+    SESSION_LIFETIME,
+    SESSION_PURGE_DELTA,
+)
+from ..models import User
 from ..utils import RateLimiter, utc_now
+
+AccessToken = str
+RefreshToken = str
 
 logger = logging.getLogger(__name__)
 passlib_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 router = APIRouter(tags=["auth"])
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
 
 
 def authenticate_user(username: str, password: str, db) -> bool:
@@ -32,38 +39,70 @@ def authenticate_user(username: str, password: str, db) -> bool:
     return user and passlib_context.verify(password, user.hashed_password)
 
 
-def create_access_token(
-    username: str, expiry_delta: timedelta, db: deps.DBConnection
-) -> Token:
-    session_id = secrets.token_hex()
-    creation_datetime = utc_now()
+def add_auth_session(
+    db: deps.DBConnection,
+    username: str,
+    access_lifetime: timedelta = ACCESS_TOKEN_LIFETIME,
+    session_lifetime: timedelta = SESSION_LIFETIME,
+) -> tuple[AccessToken, RefreshToken]:
+    """Generate an access token w/ a refresh token and add to the DB.
+
+    The access and refresh tokens are generated securely using a CSPRNG.
+    """
+    access_token = "A:" + secrets.token_hex()
+    access_expiry = utc_now() + access_lifetime
+    refresh_token = "R:" + secrets.token_hex()
+    refresh_expiry = utc_now() + session_lifetime
     with db:
         db.execute(
-            "INSERT INTO sessions(id, username, created_at, expired_at) VALUES(?, ?, ?, ?)",
-            (session_id, username, creation_datetime, creation_datetime + expiry_delta)
+            """
+            INSERT INTO sessions(
+                username, refresh_token, refresh_expiry, access_token, access_expiry, created_at
+            )
+            VALUES(?, ?, ?, ?, ?, ?);
+            """,
+            (username, refresh_token, refresh_expiry, access_token, access_expiry, utc_now())
         )
-    return Token(access_token=session_id, token_type="bearer")
+    return (access_token, refresh_token)
+
+
+def refresh_auth_session(
+    db: deps.DBConnection,
+    refresh_token: str,
+    access_lifetime: timedelta = ACCESS_TOKEN_LIFETIME
+) -> AccessToken:
+    """Regenerate a new access token for a pre-existing session (refresh token)."""
+    access_token = "A:" + secrets.token_hex()
+    access_expiry = utc_now() + access_lifetime
+    with db:
+        db.execute(
+            "UPDATE sessions SET access_token = ?, access_expiry = ? WHERE refresh_token = ?;",
+            [access_token, access_expiry, refresh_token]
+        )
+    return access_token
 
 
 async def purge_expired_sessions(purge_delta: timedelta, db: deps.DBConnection) -> None:
-    for row in db.execute("SELECT * FROM sessions;"):
-        session = SignInSession(**row)
-        if (session.expired_at + purge_delta) < utc_now():
+    for session in db.get_sign_in_sessions(username=None):
+        if (session.refresh_expiry + purge_delta) < utc_now():
+            id = session.refresh_token
             created_at = session.created_at.strftime("%Y-%m-%d %H:%M:%S")
-            logger.info(f"Purging session ({session.username}) from {created_at} - {session.id}")
-            db.execute("DELETE FROM sessions WHERE id = ?;", [session.id])
+            logger.info(f"Purging session ({session.username}) from {created_at} - {id}")
+            db.execute("DELETE FROM sessions WHERE refresh_token = ?;", [id])
             db.commit()
 
 
 @router.post("/signup", status_code=201)
 async def create_new_user(
-    username: Annotated[str, Form(min_length=1, max_length=20, regex=r"^[a-z\.-]+$")],
+    username: Annotated[str, Form(min_length=1, max_length=20, regex=r"^[a-z0-9\.-]+$")],
     password: Annotated[str, Form(min_length=1, max_length=100)],
     full_name: Annotated[str, Form(max_length=50)],
     challenge: Annotated[int, Query(gt=25, lt=27)],
     db: deps.DBConnection,
     request: Request,
-) -> Token:
+    response: Response,
+    background_tasks: BackgroundTasks,
+) -> AccessToken:
     limiter = RateLimiter("signup", {RateLimiter.DAY: 5}, db)
     if limiter.update_and_check(request.client.host):
         raise HTTPException(429)
@@ -79,42 +118,66 @@ async def create_new_user(
         "is_admin": False,
         "created_at": utc_now(),
     }
-    db.execute("""
-        INSERT INTO users (username, hashed_password, full_name, is_admin, created_at)
-        VALUES (:username, :password, :full_name, :is_admin, :created_at);
-    """, data)
-    token = create_access_token(username, AUTH_TOKEN_EXPIRE_DELTA, db)
-    db.commit()
-    return token
+    with db:
+        db.execute("""
+            INSERT INTO users (username, hashed_password, full_name, is_admin, created_at)
+            VALUES (:username, :password, :full_name, :is_admin, :created_at);
+        """, data)
+    return await login_for_access_token(username, password, db, request, response, background_tasks)
 
 
 @router.post("/login")
 async def login_for_access_token(
-    form: Annotated[OAuth2PasswordRequestForm, Depends()],
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
     db: deps.DBConnection,
     request: Request,
+    response: Response,
     background_tasks: BackgroundTasks,
-) -> Token:
+) -> AccessToken:
     limiter = RateLimiter("login:failed-attempt", {RateLimiter.DAY: 10}, db)
-    if limiter.should_block(request.client.host) or limiter.should_block(form.username):
+    if limiter.should_block(request.client.host) or limiter.should_block(username):
         raise HTTPException(429)
 
-    if authenticate_user(form.username, form.password, db):
-        sessions_cur = db.execute("SELECT * FROM sessions WHERE username = ?;", [form.username])
-        # TODO: don't count expired sessions against this limit.
-        if len(sessions_cur.fetchall()) >= 15:
+    if authenticate_user(username, password, db):
+        if len(db.get_sign_in_sessions(username, include_expired=False)) >= MAX_SESSIONS:
             raise HTTPException(429, detail="Too many registered sessions")
 
-        background_tasks.add_task(purge_expired_sessions, AUTH_TOKEN_PURGE_DELTA, db)
-        return create_access_token(form.username, AUTH_TOKEN_EXPIRE_DELTA, db)
+        background_tasks.add_task(purge_expired_sessions, SESSION_PURGE_DELTA, db)
+        access_token, refresh_token = add_auth_session(db, username)
+        response.set_cookie(
+            REFRESH_COOKIE_NAME,
+            refresh_token,
+            secure=True,
+            httponly=True,
+            samesite="lax",
+            max_age=int(SESSION_LIFETIME.total_seconds()),
+        )
+        return access_token
 
     limiter.update(request.client.host)
-    limiter.update(form.username)
+    limiter.update(username)
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Incorrect username or password",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+@router.post("/logout")
+async def logout_session(
+    session: deps.ValidAccessToken, db: deps.DBConnection, response: Response
+) -> None:
+    # XXX: browser support for this header is quite limited, *sigh*
+    # https://bugs.chromium.org/p/chromium/issues/detail?id=898503
+    response.headers["Clear-Site-Data"] = '"cookies", "storage"'
+    with db:
+        db.execute("DELETE FROM sessions WHERE access_token = ?;", [session.access_token])
+
+
+@router.post("/refresh-session")
+async def refresh_session(session: deps.ValidRefreshCookie, db: deps.DBConnection) -> AccessToken:
+    return refresh_auth_session(db, session.refresh_token)
 
 
 @router.get("/user/{username}")
@@ -127,5 +190,6 @@ async def get_user(actor: deps.SignedInUser, user: deps.ExistingUser) -> User:
 async def delete_user(actor: deps.SignedInUser, user: deps.ExistingUser, db: deps.DBConnection) -> None:
     """Delete user from DB, not including owned decks."""
     deps.check_for_resource_owner_or_admin(user.username, actor)
-    db.execute("DELETE FROM users WHERE username = ?;", [user.username])
-    db.commit()
+    with db:
+        db.execute("DELETE FROM sessions WHERE username = ?;", [user.username])
+        db.execute("DELETE FROM users WHERE username = ?;", [user.username])

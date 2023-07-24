@@ -28,7 +28,6 @@ class User(BaseModel):
     full_name: str
     is_admin: bool
     created_at: str
-
     decks: list[DeckID]
 
 
@@ -36,8 +35,10 @@ class UserInDB(User):
     hashed_password: str
 
 
-class SignInSession(BaseModel):
-    id: str
-    username: Username
+class AuthSession(BaseModel):
+    username: str
+    refresh_token: str
+    refresh_expiry: datetime.datetime
+    access_token: str
+    access_expiry: datetime.datetime
     created_at: datetime.datetime
-    expired_at: datetime.datetime

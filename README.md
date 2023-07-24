@@ -51,21 +51,23 @@ CREATE TABLE "requests" (
     "path"       TEXT NOT NULL,
     "code"       INTEGER NOT NULL,
     "duration"   REAL NOT NULL,
-) WITHOUT ROWID;
+);
 
 CREATE TABLE "sessions" (
-    "id"            TEXT PRIMARY KEY NOT NULL,
-    "username"      TEXT NOT NULL,
-    "created_at"    TEXT NOT NULL,
-    "expired_at"    TEXT NOT NULL,
+    "username"	      TEXT NOT NULL,
+    "refresh_token"	  TEXT PRIMARY KEY NOT NULL,
+    "refresh_expiry"  TEXT NOT NULL,
+    "access_token"    TEXT NOT NULL UNIQUE,
+    "access_expiry"   TEXT NOT NULL,
+    "created_at"      TEXT NOT NULL,
     FOREIGN KEY("username") REFERENCES "users"("username")
-) WITHOUT ROWID;
+);
 
 CREATE TABLE "ratelimits" (
     "key"       TEXT NOT NULL,
-     "duration"  INTEGER NOT NULL,
-     "value"     INTEGER NOT NULL,
-     "expiry"    TEXT NOT NULL,
-     PRIMARY KEY("key", "expiry")
+    "duration"  INTEGER NOT NULL,
+    "value"     INTEGER NOT NULL,
+    "expiry"    TEXT NOT NULL,
+    PRIMARY KEY("key", "expiry")
 );
 ```

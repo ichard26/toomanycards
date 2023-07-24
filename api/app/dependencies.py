@@ -1,14 +1,13 @@
 import sqlite3
-from typing import Annotated
+from typing import Annotated, AsyncIterator
 
-from fastapi import Depends, HTTPException, Path, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Path, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from .database import open_sqlite_connection
-from .models import Deck, SignInSession, User, UserInDB
+from .constants import REFRESH_COOKIE_NAME
+from .database import SQLiteConnection, open_sqlite_connection
+from .models import AuthSession, Deck, User, UserInDB
 from .utils import utc_now
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 
 def check_for_resource_owner_or_admin(resource_owner, actor: User) -> None:
@@ -16,7 +15,7 @@ def check_for_resource_owner_or_admin(resource_owner, actor: User) -> None:
         raise HTTPException(status_code=403, detail="Resource does not belong to you.")
 
 
-async def setup_database_connection() -> sqlite3.Connection:
+async def setup_database_connection() -> AsyncIterator[sqlite3.Connection]:
     con = open_sqlite_connection()
     try:
         yield con
@@ -24,7 +23,7 @@ async def setup_database_connection() -> sqlite3.Connection:
         con.close()
 
 
-DBConnection = Annotated[sqlite3.Connection, Depends(setup_database_connection)]
+DBConnection = Annotated[SQLiteConnection, Depends(setup_database_connection)]
 
 
 async def require_existing_username(
@@ -45,23 +44,29 @@ async def require_existing_deck(
     raise HTTPException(status_code=404, detail="Deck not found")
 
 
-async def require_signed_in_user(
-    token: Annotated[str, Depends(oauth2_scheme)], db: DBConnection,
-) -> UserInDB:
+async def require_access_token(
+    token: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())], db: DBConnection,
+) -> AuthSession:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials (invalid or expired session ID)",
+        detail="Could not validate credentials (invalid or expired access token)",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    row = db.execute("SELECT * FROM sessions WHERE id = ?;", [token]).fetchone()
+    row = db.execute("SELECT * FROM sessions WHERE access_token = ?;", [token.credentials]).fetchone()
     if row is None:
         raise credentials_exception
 
-    session = SignInSession(**row)
-    if utc_now() > session.expired_at:
+    session = AuthSession(**row)
+    if utc_now() > session.access_expiry:
         raise credentials_exception
 
+    return session
+
+
+async def require_signed_in_user(
+    session: Annotated[AuthSession, Depends(require_access_token)], db: DBConnection,
+) -> UserInDB:
     return db.get_user(session.username)
 
 
@@ -72,7 +77,19 @@ async def require_admin_user(user: Annotated[UserInDB, Depends(require_signed_in
     return user
 
 
+async def require_refresh_cookie(request: Request, db: DBConnection) -> AuthSession:
+    if token := request.cookies.get(REFRESH_COOKIE_NAME):
+        if row := db.execute("SELECT * FROM sessions WHERE refresh_token = ?;", [token]).fetchone():
+            session = AuthSession(**row)
+            if utc_now() < session.refresh_expiry:
+                return session
+
+    raise HTTPException(401, detail="missing, invalid, or expired refresh token")
+
+
 ExistingDeck = Annotated[Deck, Depends(require_existing_deck)]
 ExistingUser = Annotated[UserInDB, Depends(require_existing_username)]
 SignedInUser = Annotated[UserInDB, Depends(require_signed_in_user)]
 SignedInAdmin = Annotated[UserInDB, Depends(require_admin_user)]
+ValidAccessToken = Annotated[AuthSession, Depends(require_access_token)]
+ValidRefreshCookie = Annotated[AuthSession, Depends(require_refresh_cookie)]
