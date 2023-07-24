@@ -29,13 +29,14 @@ LOG_CONFIG: Final = {
 # --- Database --- #
 
 if (_db_path := os.getenv("TMC_DATABASE_PATH")) is not None:
-    DATABASE_PATH: Final = Path(_db_path)
+    DATABASE_PATH = Path(_db_path)
 else:
-    DATABASE_PATH: Final = Path(ROOT_DIR, "db.sqlite3")
+    DATABASE_PATH = Path(ROOT_DIR, "db.sqlite3")
 
 # --- Authentication --- #
 
 ACCESS_TOKEN_LIFETIME: Final = timedelta(minutes=30)
+ALLOW_NEW_USERS: Final = bool(os.getenv("TMC_ALLOW_NEW_USERS", False))
 MAX_SESSIONS: Final = 50
 REFRESH_COOKIE_NAME: Final = "RefreshToken"
 SESSION_LIFETIME: Final = timedelta(days=1)

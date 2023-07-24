@@ -47,8 +47,8 @@ are generated from a (presumably high quality) CSPRNG via the
 On the sign-up side, passwords are salted and hashed using the [passlib] library and
 bcrypt algorithm.
 
-**Summary:** TMC's authentication implementation is *probably* secure against CRSF and
-session prediction/fixation, however, the session ID can theorically be stolen via XSS.
+**Summary:** TMC's authentication implementation is _reasonably_ secure against CRSF and
+session prediction/fixation, however, the session ID can theoretically be stolen via XSS.
 Fortunately, that should not pose an issue (and for what it's worth, I'd have other
 problems if TMC was vulnerable to XSS).
 
@@ -73,25 +73,32 @@ problems if TMC was vulnerable to XSS).
 
 ### Cross-Site Request Forgery (CSRF)
 
-... TBW
+The [authentication scheme described earlier](#how-authentication-is-handled) is secure
+against CSRF. The access token required to use authenticated endpoints is stored in memory
+and must be given explicitly in the `Authorization` header.
 
 ### Server-Side Request Forgery (SSRF)
 
 TMC's backend (web server + API) does not perform requests so SSRF should not be a
 concern.
 
-### Session fixation (Login CRSF)
+### Session fixation (Login CSRF)
 
 Continuing from the
 [Authentication discussion from earlier](#how-authentication-is-handled), a less obvious
 form of session fixation attack is when an user unwittingly logs in as the attacker.
 
-This can be either be achieved by cookie overwriting or Login CRSF. I'll assume the former
+This can be either be achieved by cookie overwriting or Login CSRF. I'll assume the former
 is infeasible by assuming the domain and its subdomains are not compromised *and* that the
 ["Strict Secure Cookies" draft specification][strict-secure-cookies] has been implemented
-(which is true for Chrome and Firefox).
+(which is true for Chrome and Firefox). <!-- TODO: actually validate this claim -->
 
-(discuss login csrf)
+Login CSRF is typically possible as there are quite a few ways a malicious site can submit
+unwanted requests with parameters or form data, including sign-in credentials. To avoid a
+malicious site forcing the browser to log into an attacker controlled account, requests to
+`/api/login` MUST contain a `X-CSRF-Protection` header. This relies on the fact that
+current implementations of the SOP prevent cross-origin requests from containing custom
+headers. This could change so this mitigation isn't perfect, but it's good enough.
 
 ### SQL injection
 

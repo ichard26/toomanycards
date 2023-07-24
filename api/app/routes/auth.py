@@ -7,6 +7,7 @@ from fastapi import (
     APIRouter,
     BackgroundTasks,
     Form,
+    Header,
     HTTPException,
     Query,
     Request,
@@ -18,6 +19,7 @@ from passlib.context import CryptContext
 from .. import dependencies as deps
 from ..constants import (
     ACCESS_TOKEN_LIFETIME,
+    ALLOW_NEW_USERS,
     MAX_SESSIONS,
     REFRESH_COOKIE_NAME,
     SESSION_LIFETIME,
@@ -103,6 +105,9 @@ async def create_new_user(
     response: Response,
     background_tasks: BackgroundTasks,
 ) -> AccessToken:
+    if not ALLOW_NEW_USERS:
+        raise HTTPException(403, "User sign-ups are currently disabled")
+
     limiter = RateLimiter("signup", {RateLimiter.DAY: 5}, db)
     if limiter.update_and_check(request.client.host):
         raise HTTPException(429)
@@ -130,6 +135,7 @@ async def create_new_user(
 async def login_for_access_token(
     username: Annotated[str, Form()],
     password: Annotated[str, Form()],
+    x_csrf_protection: Annotated[str, Header()],
     db: deps.DBConnection,
     request: Request,
     response: Response,
@@ -178,6 +184,11 @@ async def logout_session(
 @router.post("/refresh-session")
 async def refresh_session(session: deps.ValidRefreshCookie, db: deps.DBConnection) -> AccessToken:
     return refresh_auth_session(db, session.refresh_token)
+
+
+@router.get("/current-user")
+async def get_current_user(actor: deps.SignedInUser) -> User:
+    return actor
 
 
 @router.get("/user/{username}")
