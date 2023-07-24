@@ -1,6 +1,5 @@
 import sqlite3
 from datetime import datetime
-from pathlib import Path
 from typing import Optional
 
 from . import constants
@@ -18,18 +17,7 @@ sqlite3.register_adapter(datetime, adapt_datetime_iso)
 
 class SQLiteConnection(sqlite3.Connection):
     def __init__(self, *args, **kwargs) -> None:
-        self.backup_after_commit = False
-        self.backup_path: Path
         super().__init__(*args, **kwargs)
-
-    def commit(self) -> None:
-        super().commit()
-        if self.backup_after_commit:
-            backup_db = sqlite3.connect(self.backup_path)
-            try:
-                self.backup(backup_db)
-            finally:
-                backup_db.close()
 
     def get_user(self, username: Username) -> Optional[UserInDB]:
         cur = self.execute("SELECT * FROM users WHERE username = ?;", [username])
@@ -66,6 +54,4 @@ def open_sqlite_connection() -> sqlite3.Connection:
     con.execute("PRAGMA foreign_keys = ON;")
     con.execute("PRAGMA secure_delete = OFF;")
     con.row_factory = sqlite3.Row
-    con.backup_after_commit = constants.DATABASE_BACKUP
-    con.backup_path = constants.DATABASE_BACKUP_PATH
     return con

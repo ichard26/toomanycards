@@ -33,9 +33,6 @@ if (_db_path := os.getenv("TMC_DATABASE_PATH")) is not None:
 else:
     DATABASE_PATH: Final = Path(ROOT_DIR, "db.sqlite3")
 
-DATABASE_BACKUP: Final = False
-DATABASE_BACKUP_PATH: Final = DATABASE_PATH.with_stem(DATABASE_PATH.stem + "-backup")
-
 # --- Authentication --- #
 
 ACCESS_TOKEN_LIFETIME: Final = timedelta(minutes=30)
