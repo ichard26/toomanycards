@@ -1,5 +1,5 @@
 import sqlite3
-from typing import Annotated, AsyncIterator
+from typing import Annotated, AsyncIterator, Optional
 
 from fastapi import Depends, HTTPException, Path, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -45,13 +45,18 @@ async def require_existing_deck(
 
 
 async def require_access_token(
-    token: Annotated[HTTPAuthorizationCredentials, Depends(HTTPBearer())], db: DBConnection,
+    token: Annotated[
+        Optional[HTTPAuthorizationCredentials], Depends(HTTPBearer(auto_error=False))
+    ],
+    db: DBConnection,
 ) -> AuthSession:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials (invalid or expired access token)",
+        detail="Could not validate credentials (missing, invalid, or expired access token)",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    if token is None:
+        raise credentials_exception
 
     row = db.execute("SELECT * FROM sessions WHERE access_token = ?;", [token.credentials]).fetchone()
     if row is None:
