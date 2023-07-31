@@ -86,13 +86,13 @@ def refresh_auth_session(
 
 
 async def purge_expired_sessions(purge_delta: timedelta, db: deps.DBConnection) -> None:
-    for session in db.get_sign_in_sessions(username=None):
-        if (session.refresh_expiry + purge_delta) < utc_now():
-            id = session.refresh_token
-            created_at = session.created_at.strftime("%Y-%m-%d %H:%M:%S")
-            logger.info(f"Purging session ({session.username}) from {created_at} - {id}")
-            db.execute("DELETE FROM sessions WHERE refresh_token = ?;", [id])
-            db.commit()
+    with db:
+        for session in db.get_sign_in_sessions(username=None):
+            if (session.refresh_expiry + purge_delta) < utc_now():
+                id = session.refresh_token
+                created_at = session.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                logger.info(f"Purging session ({session.username}) from {created_at} - {id}")
+                db.execute("DELETE FROM sessions WHERE refresh_token = ?;", [id])
 
 
 @router.post("/signup", status_code=201)

@@ -2,6 +2,7 @@ import logging
 import time
 
 from fastapi import FastAPI, Request
+from starlette.background import BackgroundTask  # noqa: F401
 
 from .constants import LOG_CONFIG
 from .database import open_sqlite_connection
@@ -42,26 +43,33 @@ async def add_process_time_header(request: Request, call_next):
     response = await call_next(request)
     elapsed = round((time.perf_counter() - start_time) * 1000, 2)
 
-    db = open_sqlite_connection()
-    try:
-        entry = (
-            utc_now(),
-            request.client.host,
-            request.headers.get("User-Agent"),
-            request.method,
-            request.url.path,
-            response.status_code,
-            elapsed,
-        )
-        db.execute("""
-            INSERT INTO requests(datetime, ip, useragent, verb, path, code, duration)
-            VALUES(?, ?, ?, ?, ?, ?, ?);
-            """, entry)
-        db.commit()
-    finally:
-        db.close()
+    def log() -> None:
+        db = open_sqlite_connection()
+        try:
+            with db:
+                db.execute("""
+                INSERT INTO requests(datetime, ip, useragent, verb, path, code, duration)
+                VALUES(?, ?, ?, ?, ?, ?, ?);
+                """, entry)
+        finally:
+            db.close()
 
-    response.headers["Server-Timing"] = f"total;dur={elapsed:.1f}"
+    entry = (
+        utc_now(),
+        request.client.host,
+        request.headers.get("User-Agent"),
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed,
+    )
+    start_time = time.perf_counter()
+    log()
+    elapsed2 = (time.perf_counter() - start_time) * 1000
+    # response.background = BackgroundTask(log)
+    response.headers["Server-Timing"] = (
+        f"endpoint;dur={elapsed:.1f}, log-middleware;dur={elapsed2:.1f}"
+    )
     return response
 
 
