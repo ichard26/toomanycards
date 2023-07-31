@@ -24,6 +24,7 @@ from ..constants import (
     REFRESH_COOKIE_NAME,
     SESSION_LIFETIME,
     SESSION_PURGE_DELTA,
+    TLS_ENABLED,
 )
 from ..models import User
 from ..utils import RateLimiter, utc_now
@@ -154,7 +155,7 @@ async def login_for_access_token(
         response.set_cookie(
             REFRESH_COOKIE_NAME,
             refresh_token,
-            secure=True,
+            secure=TLS_ENABLED,
             httponly=True,
             samesite="lax",
             max_age=int(SESSION_LIFETIME.total_seconds()),
