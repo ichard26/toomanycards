@@ -3,7 +3,16 @@ import logging
 import sqlite3
 from collections.abc import Iterable
 from datetime import datetime, timedelta, timezone
-from typing import Final, Sequence, TypeVar
+from typing import TYPE_CHECKING, Any, Final, Optional, Sequence, TypeVar, Union, cast
+
+if TYPE_CHECKING:
+    ASGI3Application = Any
+    ASGIReceiveCallable = Any
+    ASGISendCallable = Any
+    Headers = dict[bytes, bytes]
+    HTTPScope = Any
+    Scope = Any
+    WebSocketScope = Any
 
 import click
 import uvicorn.logging
@@ -27,6 +36,60 @@ class AppLogFormatter(uvicorn.logging.DefaultFormatter):
         if self.use_colors:
             record.name = click.style(record.name, dim=True)
         return super().formatMessage(record)
+
+
+class ProxyHeadersMiddleware:
+    """
+    This middleware can be used when a known proxy is fronting the application,
+    and is trusted to be properly setting the `X-Forwarded-Proto`,
+    `X-Forwarded-For`, and `X-Forwarded-Client-Port` headers with the connecting
+    client information.
+
+    Modifies the `client` and `scheme` information so that they reference
+    the connecting client, rather that the connecting proxy.
+
+    Portions taken from the encode/uvicorn project.
+
+    Copyright © 2017-present, Encode OSS Ltd. All rights reserved.
+    """
+
+    def __init__(self, app: "ASGI3Application") -> None:
+        self.app = app
+
+    def rewrite_scheme(self, scope: "Scope", headers: "Headers") -> None:
+        # Determine if the incoming request was http or https based on
+        # the X-Forwarded-Proto header.
+        x_forwarded_proto = (headers[b"x-forwarded-proto"].decode("latin1").strip())
+        if scope["type"] == "websocket":
+            scope["scheme"] = "wss" if x_forwarded_proto == "https" else "ws"
+        else:
+            scope["scheme"] = x_forwarded_proto
+
+    def rewrite_client(
+        self, scope: "Scope", headers: "Headers", client_host: Optional[str]
+    ) -> None:
+        # Determine the client address from the X-Real-IP and X-Forwarded-Client-Port
+        # headers.
+        host = headers[b"x-real-ip"].decode("latin1")
+        port = int(headers[b"x-forwarded-client-port"].decode("latin1"))
+        scope["client"] = (host, port)
+
+    async def __call__(
+        self, scope: "Scope", receive: "ASGIReceiveCallable", send: "ASGISendCallable"
+    ) -> None:
+        if scope["type"] in ("http", "websocket"):
+            scope = cast(Union["HTTPScope", "WebSocketScope"], scope)
+            headers = dict(scope["headers"])
+            client_addr: Optional[tuple[str, int]] = scope.get("client")
+            client_host = client_addr[0] if client_addr else None
+
+            if client_host in ("127.0.0.1", "localhost"):
+                if b"x-forwarded-proto" in headers:
+                    self.rewrite_scheme(scope, headers)
+                if b"x-real-ip" in headers:
+                    self.rewrite_client(scope, headers, client_host)
+
+        return await self.app(scope, receive, send)
 
 
 class RateLimitWindow(BaseModel):
