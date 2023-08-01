@@ -2,9 +2,9 @@ import logging
 import time
 
 from fastapi import FastAPI, Request
-from starlette.background import BackgroundTask  # noqa: F401
+from starlette.background import BackgroundTask
 
-from .constants import LOG_CONFIG
+from .constants import LOG_CONFIG, USE_UNIX_DOMAIN_SOCKET
 from .database import open_sqlite_connection
 from .routes import admin, auth, deck
 from .utils import ProxyHeadersMiddleware, utc_now
@@ -34,7 +34,7 @@ app = FastAPI(
 app.include_router(admin.router)
 app.include_router(auth.router)
 app.include_router(deck.router)
-app.add_middleware(ProxyHeadersMiddleware)
+app.add_middleware(ProxyHeadersMiddleware, require_none_client=USE_UNIX_DOMAIN_SOCKET)
 
 
 @app.middleware("http")
@@ -56,20 +56,15 @@ async def add_process_time_header(request: Request, call_next):
 
     entry = (
         utc_now(),
-        request.client.host,
+        getattr(request.client, "host", None),
         request.headers.get("User-Agent"),
         request.method,
         request.url.path,
         response.status_code,
         elapsed,
     )
-    start_time = time.perf_counter()
-    log()
-    elapsed2 = (time.perf_counter() - start_time) * 1000
-    # response.background = BackgroundTask(log)
-    response.headers["Server-Timing"] = (
-        f"endpoint;dur={elapsed:.1f}, log-middleware;dur={elapsed2:.1f}"
-    )
+    response.background = BackgroundTask(log)
+    response.headers["Server-Timing"] = f"endpoint;dur={elapsed:.1f}"
     return response
 
 

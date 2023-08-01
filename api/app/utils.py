@@ -53,8 +53,9 @@ class ProxyHeadersMiddleware:
     Copyright © 2017-present, Encode OSS Ltd. All rights reserved.
     """
 
-    def __init__(self, app: "ASGI3Application") -> None:
+    def __init__(self, app: "ASGI3Application", require_none_client: bool) -> None:
         self.app = app
+        self.trusted_clients = (None,) if require_none_client else ("127.0.0.1", "localhost")
 
     def rewrite_scheme(self, scope: "Scope", headers: "Headers") -> None:
         # Determine if the incoming request was http or https based on
@@ -83,7 +84,7 @@ class ProxyHeadersMiddleware:
             client_addr: Optional[tuple[str, int]] = scope.get("client")
             client_host = client_addr[0] if client_addr else None
 
-            if client_host in ("127.0.0.1", "localhost"):
+            if client_host in self.trusted_clients:
                 if b"x-forwarded-proto" in headers:
                     self.rewrite_scheme(scope, headers)
                 if b"x-real-ip" in headers:

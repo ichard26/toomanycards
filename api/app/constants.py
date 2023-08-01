@@ -41,4 +41,8 @@ MAX_SESSIONS: Final = 50
 REFRESH_COOKIE_NAME: Final = "RefreshToken"
 SESSION_LIFETIME: Final = timedelta(days=1)
 SESSION_PURGE_DELTA: Final = timedelta(days=2)
+
+# --- Deployment --- #
+
 TLS_ENABLED: Final = bool(os.getenv("TMC_TLS_ENABLED", False))
+USE_UNIX_DOMAIN_SOCKET: Final = bool(os.getenv("TMC_USE_UNIX_DOMAIN_SOCKET", False))
