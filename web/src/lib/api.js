@@ -12,6 +12,7 @@ export class API {
       this.fetch = fetchWrapper;
     }
     this.accessToken = null;
+    this._accessTokenPromise = null;
   }
 
   async currentUser() {
@@ -51,14 +52,20 @@ export class API {
   }
 
   async _refreshSession() {
+    if (this._accessTokenPromise !== null) {
+      return this._accessTokenPromise;
+    }
+
     console.log("[API] %cAttempting to refresh session...", "color: gray")
-    return this.post("/refresh-session", { authenticated: false, retry: false }).then((token) => {
+    this._accessTokenPromise = this.post("/refresh-session", { authenticated: false, retry: false }).then((token) => {
       console.log(`[API] %cAccess token acquired!`, "color: green");
       this.accessToken = token;
       return true;
     }).catch((reason) => {
       console.warn(`[API] Failed to acquire new access token: ${reason}`);
+      this.accessToken = null;
       return false;
     });
+    return this._accessTokenPromise;
   }
 }
