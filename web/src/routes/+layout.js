@@ -1,8 +1,9 @@
 import { API } from "../lib/api";
 
+export const ssr = false;
+
 export async function load({ fetch }) {
-  const api = new API(`http://localhost:8000`, fetch);
   return {
-    api, user: api.currentUser()
-  }
+    api: new API("/api", fetch)
+  };
 }

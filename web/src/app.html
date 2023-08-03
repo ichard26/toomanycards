@@ -8,7 +8,7 @@
     <style>
       :root {
         color-scheme: light dark;
-        --primary-accent-color: orange;
+        --primary-accent-color: hsl(341, 100%, 44%);
       }
 
       * {
@@ -35,10 +35,6 @@
         margin: 0 auto 0 auto;
       }
 
-      footer {
-        margin-top: auto;
-      }
-
       .card-text {
         color: var(--primary-accent-color);
         font-size: 3em;
@@ -62,6 +58,6 @@
     </style>
   </head>
   <body data-sveltekit-preload-data="hover">
-    <div style="display: contents">%sveltekit.body%</div>
+    <div style="display: contents;">%sveltekit.body%</div>
   </body>
 </html>

@@ -15,8 +15,8 @@ export class API {
     this._accessTokenPromise = null;
   }
 
-  async currentUser() {
-    return this.get("/current-user").catch(() => null);
+  async currentUser(args) {
+    return this.get("/current-user", args).catch(() => null);
   }
   async get(path, args) { return this.requestJSON("GET", path, args); }
   async post(path, args) { return this.requestJSON("POST", path, args); }
@@ -26,11 +26,11 @@ export class API {
     return this.request(method, path, args).then((resp) => resp.json());
   }
 
-  async request(method, path, { authenticated = true, retry = true, body, headers }) {
-    const args = { method, headers: {}, body, credentials: "include" };
+  async request(method, path, { authenticated = true, retry = true, body, headers, priority = "auto" }) {
+    const args = { method, headers: {}, body, credentials: "include", priority };
     if (authenticated) {
       if (this.accessToken === null && !await this._refreshSession()) {
-        return Promise.reject("Unable to fetch an access token");
+        return Promise.reject({ status: 401, message: "Unable to refresh session"});
       }
       args.headers["Authorization"] = `Bearer ${this.accessToken}`;
     }
