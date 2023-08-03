@@ -1,9 +1,10 @@
 <script>
   export let data;
   let username, password;
+  let message = "";
 
   async function submitCredentials(e) {
-    await data.api.post("/login", {
+    data.api.post("/login", {
       authenticated: false,
       headers: {
         "X-CSRF-Protection": "1",
@@ -12,9 +13,17 @@
         "username": username,
         "password": password,
       })
+    }).then(() => {
+      message = "Success! 🎉";
+      document.location.href = "/";
+    }).catch((resp) => {
+      if (resp.status == 401) { message = "Incorrect username or password, please try again."; }
+      else { message = "Internal error: unable to login. Please try again later."; }
+    }).finally(() => {
+      username = password = null;
     });
-    username = password = null;
-    document.location.href = "/";
+
+
   }
 </script>
 
@@ -24,7 +33,24 @@
 <h1>Login</h1>
 
 <form action=":8000/login" method="POST">
-  <input name="username" autocomplete="username" placeholder="username" bind:value={username}>
+  <!-- svelte-ignore a11y-autofocus -->
+  <input name="username" autocomplete="username" placeholder="username" bind:value={username} autofocus>
   <input name="password" autocomplete="current-password" placeholder="password" type="password" bind:value={password}>
-  <button type="submit" on:click|preventDefault={submitCredentials}>Submit</button>
+  <p><button type="submit" on:click|preventDefault={submitCredentials}>Submit</button></p>
 </form>
+
+<p>{message}</p>
+
+<style>
+  form {
+    display: grid;
+    justify-items: center;
+  }
+  input {
+    max-width: 300px;
+    padding: 0.8em;
+  }
+  button {
+    padding: 0.5em;
+  }
+</style>
