@@ -19,21 +19,28 @@
 
 <footer class="{loud ? 'loud' : 'quiet'}">
   {#if user === undefined}
-    <span>...loading</span>
+    <p>...loading</p>
   {:else if user !== null}
     <span>Logged in as <b>{user.username} ({user.full_name})</b></span>
-    <button on:click={logout}>Log out</button>
+    <button class="link" on:click={logout}>Log out</button>
   {:else}
-    <a href="/login" tabindex="-1"><button type="button">Log in</button></a>
+    <a href="/login" tabindex="-1"><button type="button" >Log in</button></a>
   {/if}
-  <a href="/">Home</a>
+  <nav style="display: contents"><a href="/">Home</a></nav>
+  <p style="font-size: smaller; margin: 0;">© 2023-present |
+    <a href="https://ichard26.github.io/">Richard Si</a>
+  </p>
 </footer>
 
 <style>
+  nav a {
+    font-weight: bold;
+  }
   footer {
     padding: 10px 2em;
     margin: auto;
     margin-bottom: 20px;
+    font-size: 0.9em;
   }
   footer.quiet {
     filter: opacity(80%);
@@ -50,5 +57,13 @@
   }
   footer button {
     margin: 0 10px;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+  }
+  @media (max-width: 400px) {
+    footer button {
+      margin-top: 0.4rem;
+      margin-bottom: 1rem;
+    }
   }
 </style>

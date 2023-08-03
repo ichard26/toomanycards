@@ -8,6 +8,7 @@
     <style>
       :root {
         color-scheme: light dark;
+        --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         --primary-accent-color: hsl(341, 100%, 44%);
       }
 
@@ -19,10 +20,22 @@
         color: var(--primary-accent-color);
       }
 
+      /* https://stackoverflow.com/a/1368286 */
+      button.link {
+        padding: 0!important;
+        border: none;
+        background: none!important;
+        color: var(--primary-accent-color);
+        font-family: var(--font-family);
+        font-size: 1em;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+
       html, body {
         width: 100%;
         height: 100%;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-family: var(--font-family);
       }
 
       body {
@@ -31,7 +44,7 @@
 
         box-sizing: border-box;
         max-width: 600px;
-        padding: 20px 20px 5px 20px;
+        padding: 40px 20px 5px 20px;
         margin: 0 auto 0 auto;
       }
     </style>

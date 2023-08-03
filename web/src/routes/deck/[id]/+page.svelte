@@ -44,6 +44,10 @@
     cardsLeft = pool.size;
 
     currentCard = (forceCard === null ? pool.getRandom() : forceCard);
+    if (currentCard === undefined) {
+      console.log("No more cards left!");
+      return;
+    }
     const { front, back } = currentCard;
     console.log(`Selected card: ${front} -> ${back} (forced: ${!!forceCard})`);
 
@@ -84,7 +88,7 @@
     answerTracker = new AnswerTracker(config.removalThreshold);
   }
 
-  dealCard();
+  if (cardsLeft) dealCard();
   window.submitAnswer = submitAnswer;
 </script>
 
@@ -94,23 +98,28 @@
 
 <h1>{deck.name}</h1>
 <p><b>{deck.description}</b></p>
-<div>
-  <button on:click={() => {
-    difficulty = (difficulty === "exact-answer" ? "multiple-choice" : "exact-answer");
-    dealCard();
-  }}>Difficulty: {difficulty}</button>
-  <button on:click={() => {
-    pool.flip();
-    mode = pool.flipped ? "term" : "definition";
-    dealCard();
-  }}>Mode: {mode}</button>
-  <p>{cardsLeft}/{originalPool.size} cards left</p>
+<button on:click={() => {
+  difficulty = (difficulty === "exact-answer" ? "multiple-choice" : "exact-answer");
+  dealCard();
+}}>Difficulty: {difficulty}</button>
+<button on:click={() => {
+  pool.flip();
+  mode = pool.flipped ? "term" : "definition";
+  dealCard();
+}}>Mode: {mode}</button>
+<p>{cardsLeft}/{originalPool.size} cards left</p>
 
+{#if cardsLeft === 0}
+  {#if originalPool.size === 0}
+    <p class="card-text">empty deck, sorry</p>
+  {:else}
+    <p class="card-text">deck finished!&nbsp;🎉</p>
+  {/if}
+{:else}
   <div>
     <p class="card-text">{currentCard.front}</p>
   </div>
   <div class="selection-div">
-
     {#if difficulty === "multiple-choice"}
       {#each options as o}
         <button on:click={submitAnswer(o, { log: trackNextAnswer })}>{o}</button>
@@ -120,9 +129,9 @@
       <input on:keydown={onButtonSubmit} autofocus>
       <button id="submit-button" on:click={onButtonSubmit}>Submit</button>
     {/if}
-
   </div>
-</div>
+{/if}
+
 <p>{resultMessage}</p>
 
 <style>
