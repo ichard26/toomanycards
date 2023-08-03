@@ -1,4 +1,6 @@
 <script>
+  import { onMount } from "svelte";
+  import { browser } from "$app/environment";
   import {
       DEFAULT_CONFIG as config,
       AnswerTracker,
@@ -18,10 +20,22 @@
 
   let difficulty = config.mode;
   let mode = "term";
-  let currentCard = null;
+  let currentCard = { front: "" };
   let trackNextAnswer = true;
   let cardsLeft = pool.size;
   let resultMessage = "";
+
+  onMount(() => {
+    let v;
+    if ((v = localStorage.getItem("tmc-app-difficulty")) !== null) {
+      difficulty = v;
+    }
+    if ((v = localStorage.getItem("tmc-app-mode")) !== null) {
+      mode = v;
+      if (mode !== "term") pool.flip();
+    }
+    dealCard();
+  });
 
   const onButtonSubmit = (event) => {
     event.target.setCustomValidity("");
@@ -35,7 +49,7 @@
       event.target.value = "";
     }
   }
-  let options = null;
+  let options = [];
 
   console.log(`%cApp set up! Number of cards: ${originalPool.size}`, "font-weight: bold;");
 
@@ -86,9 +100,10 @@
   function reset() {
     pool = originalPool.clone();
     answerTracker = new AnswerTracker(config.removalThreshold);
+    dealCard();
   }
 
-  if (cardsLeft) dealCard();
+  // For debugging only.
   window.submitAnswer = submitAnswer;
 </script>
 
@@ -100,11 +115,13 @@
 <p><b>{deck.description}</b></p>
 <button on:click={() => {
   difficulty = (difficulty === "exact-answer" ? "multiple-choice" : "exact-answer");
+  if (browser) localStorage.setItem("tmc-app-difficulty", difficulty);
   dealCard();
 }}>Difficulty: {difficulty}</button>
 <button on:click={() => {
   pool.flip();
-  mode = pool.flipped ? "term" : "definition";
+  mode = pool.flipped ? "definition" : "term";
+  if (browser) localStorage.setItem("tmc-app-mode", mode);
   dealCard();
 }}>Mode: {mode}</button>
 <p>{cardsLeft}/{originalPool.size} cards left</p>
@@ -114,6 +131,7 @@
     <p class="card-text">empty deck, sorry</p>
   {:else}
     <p class="card-text">deck finished!&nbsp;🎉</p>
+    <button on:click={reset}>Reset</button>
   {/if}
 {:else}
   <div>
