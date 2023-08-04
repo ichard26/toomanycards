@@ -12,6 +12,9 @@
   });
 </script>
 
+<svelte:head>
+  <title>TooManyCards</title>
+</svelte:head>
 <h1>TooManyCards</h1>
 
 <p>An overengineered Quizlet "replacement".</p>

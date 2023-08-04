@@ -65,7 +65,7 @@ export class API {
       console.warn(`[API] Failed to acquire new access token: ${reason}`);
       this.accessToken = null;
       return false;
-    });
+    }).finally(() => { this._accessTokenPromise = null; });
     return this._accessTokenPromise;
   }
 }

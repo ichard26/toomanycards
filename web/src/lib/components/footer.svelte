@@ -28,7 +28,7 @@
   {/if}
   <nav style="display: contents"><a href="/">Home</a></nav>
   <p style="font-size: smaller; margin: 0;">© 2023-present |
-    <a href="https://ichard26.github.io/">Richard Si</a>
+    Richard Si
   </p>
 </footer>
 

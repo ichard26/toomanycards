@@ -35,21 +35,24 @@
       if (mode !== "term") pool.flip();
     }
     dealCard();
+    document.onkeydown = (event) => {
+      if (event.key === "R" && event.altKey && event.shiftKey) {
+        reset();
+      }
+    };
   });
 
-  const onButtonSubmit = (event) => {
-    event.target.setCustomValidity("");
-    if (event.key === "Enter") {
-      if (!event.target.value.length) {
-        event.target.setCustomValidity("You cannot enter a blank answer.");
-        event.target.reportValidity();
-        return;
-      }
-      submitAnswer(event.target.value, { log: trackNextAnswer });
-      event.target.value = "";
+  const onExactSubmit = (element) => {
+    if (!element.value.length) {
+      element.setCustomValidity("You cannot enter a blank answer.");
+      element.reportValidity();
+      return;
     }
+    submitAnswer(element.value, { log: trackNextAnswer });
+    element.value = "";
   }
   let options = [];
+  let inputElement;
 
   console.log(`%cApp set up! Number of cards: ${originalPool.size}`, "font-weight: bold;");
 
@@ -98,6 +101,7 @@
   }
 
   function reset() {
+    console.log("Resetting...")
     pool = originalPool.clone();
     answerTracker = new AnswerTracker(config.removalThreshold);
     dealCard();
@@ -144,8 +148,11 @@
       {/each}
     {:else if difficulty === "exact-answer"}
       <!-- svelte-ignore a11y-autofocus -->
-      <input on:keydown={onButtonSubmit} autofocus>
-      <button id="submit-button" on:click={onButtonSubmit}>Submit</button>
+      <input bind:this={inputElement} on:keydown={(event) => {
+          event.target.setCustomValidity("");
+          if (event.key === "Enter") onExactSubmit(event.target);
+        }} autofocus>
+      <button id="submit-button" on:click={onExactSubmit(inputElement)}>Submit</button>
     {/if}
   </div>
 {/if}

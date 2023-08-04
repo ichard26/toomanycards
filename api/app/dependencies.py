@@ -36,7 +36,7 @@ async def require_existing_username(
 
 
 async def require_existing_deck(
-    deck_id: Annotated[int, Path(ge=1)], db: DBConnection
+    deck_id: Annotated[int, Path(ge=1, le=1000)], db: DBConnection
 ) -> Deck:
     if deck := db.get_deck(deck_id):
         return deck

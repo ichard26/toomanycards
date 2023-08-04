@@ -129,7 +129,9 @@ async def create_new_user(
             INSERT INTO users (username, hashed_password, full_name, is_admin, created_at)
             VALUES (:username, :password, :full_name, :is_admin, :created_at);
         """, data)
-    return await login_for_access_token(username, password, db, request, response, background_tasks)
+    return await login_for_access_token(
+        username, password, "no-csrf-here", db, request, response, background_tasks
+    )
 
 
 @router.post("/login")
