@@ -9,6 +9,12 @@ user: me! (and I have quite basic needs...)
 Otherwise, enjoy my probably terrible code as TMC is also my chance to learn API design
 and modern frontend development. 🌺
 
+## License
+
+I don't know why you'd want to reuse this code, but the project is licensed under the
+[Mozilla Public License 2.0](./LICENSE.txt) just in case. Licenses of "borrowed" code
+[can be found in `LICENSE-THIRDPARTY.md`](./LICENSE-THIRDPARTY.md).
+
 ## Security
 
 The short of it is "don't trust me, I don't know what I'm doing, mostly."

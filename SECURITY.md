@@ -119,6 +119,9 @@ checking how long `/api/login` takes to respond with 401 Unauthorized (although
 Nothing here is meant to be bullet-proof, but these should make TMC harder to abuse and
 attack.
 
+> Note: these items are things I want to implement/add (when I have time and sufficient
+> motivation down the road)
+
 - Security headers
 - Charset
 - Proper logout flow

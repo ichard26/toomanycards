@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 import itertools
 import logging
 import sqlite3
@@ -48,7 +52,8 @@ class ProxyHeadersMiddleware:
     Modifies the `client` and `scheme` information so that they reference
     the connecting client, rather that the connecting proxy.
 
-    Portions taken from the encode/uvicorn project.
+    Portions taken from the encode/uvicorn project. License can be found in
+    :/LICENSE-THIRDPARTY.md
 
     Copyright © 2017-present, Encode OSS Ltd. All rights reserved.
     """

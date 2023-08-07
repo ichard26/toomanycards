@@ -18,3 +18,12 @@ repos:
     rev: 5.12.0
     hooks:
       - id: isort
+
+  - repo: local
+    hooks:
+      - id: add-license-header
+        name: add-license-header
+        language: python
+        pass_filenames: false
+        entry: python -m scripts.license api/app web/src
+        additional_dependencies: [click]
