@@ -122,12 +122,15 @@ attack.
 > Note: these items are things I want to implement/add (when I have time and sufficient
 > motivation down the road)
 
-- Security headers
-- Charset
-- Proper logout flow
-- Caching (headers)
 - Referer and Origin header checks
 - IP/User-agent checks (forced refresh)
+
+### HTTP security headers
+
+- A somewhat strong content security policy is place (notably `unsafe-inline` styles are
+  still allowed)
+- `Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()`
+- `X-Content-Type-Options: nosniff`
 
 ### Rate limiting (and other limits)
 
