@@ -21,6 +21,26 @@ The short of it is "don't trust me, I don't know what I'm doing, mostly."
 
 The long answer [can be found in `SECURITY.md`.](./SECURITY.md)
 
+## To-do list
+
+- Deck creation and edit routes
+- PWA support
+  - Basic offline support
+- Public decks
+- Markdown support
+- More modes:
+  - "Flashcard" mode
+  - Test mode
+  - Spaced repetition mode (depends on storing results)
+- Result breakdown on deck completion
+- Result storage (for "these are the terms that you need to work on the most")
+
+Lower priority:
+
+- GitHub (and potentially Google...?) Sign-on
+- Private deck sharing (à la Google Docs)
+- Admin UI
+
 ## API database (SQLite) schema
 
 ```sql
