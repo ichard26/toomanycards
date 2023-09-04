@@ -24,6 +24,6 @@ repos:
       - id: add-license-header
         name: add-license-header
         language: python
-        pass_filenames: false
-        entry: python -m scripts.license api/app web/src
+        entry: python -m scripts.license api/app web/src --yes
         additional_dependencies: [click]
+        types: [file]

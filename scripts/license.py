@@ -9,6 +9,7 @@ _HASH_HEADER = """\
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 """
+_SLASH_HEADER = _HASH_HEADER.replace("#", "//")
 _FENCED_STAR_HEADER = """\
 /*
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -24,7 +25,7 @@ _HTML_HEADER = """\
 HEADERS = {
     ".py": _HASH_HEADER,
     ".svelte": _HTML_HEADER,
-    ".js": _FENCED_STAR_HEADER,
+    ".js": _SLASH_HEADER,
     ".html": _HTML_HEADER,
     ".css": _FENCED_STAR_HEADER,
 }
@@ -48,7 +49,10 @@ def scan(directory: os.PathLike) -> List[Path]:
 def main(src: Tuple[Path, ...], yes: bool) -> None:
     files = []
     for s in src:
-        files.extend(scan(s))
+        if s.is_dir():
+            files.extend(scan(s))
+        else:
+            files.append(s)
 
     index = 1
     need_header = {}
