@@ -19,15 +19,21 @@
       })
     }).then(() => {
       message = "Success! 🎉";
-      document.location.href = "/";
+      const returnTo = new URL(location.href).searchParams.get("return_to");
+      if (returnTo) {
+        document.location.href = decodeURIComponent(returnTo);
+      } else {
+        document.location.href = "/";
+      }
     }).catch((resp) => {
       if (resp.status == 401) { message = "Incorrect username or password, please try again."; }
-      else { message = "Internal error: unable to login. Please try again later."; }
+      else {
+        console.error(resp);
+        message = "Internal error: unable to login. Please try again later.";
+      }
     }).finally(() => {
       username = password = null;
     });
-
-
   }
 </script>
 
@@ -36,7 +42,7 @@
 </svelte:head>
 <h1>Login</h1>
 
-<form action=":8000/login" method="POST">
+<form action="/api/login" method="POST">
   <!-- svelte-ignore a11y-autofocus -->
   <input name="username" autocomplete="username" placeholder="username" bind:value={username} autofocus>
   <input name="password" autocomplete="current-password" placeholder="password" type="password" bind:value={password}>

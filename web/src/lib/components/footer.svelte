@@ -4,6 +4,7 @@
 
 <script>
   import { onMount } from "svelte";
+  import { page } from "$app/stores";
 
   export let api;
   export let loud = false;
@@ -28,7 +29,7 @@
     <span>Logged in as <b>{user.username} ({user.full_name})</b></span>
     <button class="link" on:click={logout}>Log out</button>
   {:else}
-    <a href="/login" tabindex="-1"><button type="button" >Log in</button></a>
+    <a href="/login?return_to={encodeURIComponent($page.url.pathname)}" tabindex="-1"><button type="button" >Log in</button></a>
   {/if}
   <nav style="display: contents"><a href="/">Home</a></nav>
   <p style="font-size: smaller; margin: 0;">© 2023-present |
