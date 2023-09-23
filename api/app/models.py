@@ -23,6 +23,7 @@ class Deck(BaseModel):
     owner: Optional[Username]
     public: bool
     created_at: datetime.datetime
+    updated_at: datetime.datetime
     accessed_at: datetime.datetime
     name: str
     description: str

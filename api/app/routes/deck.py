@@ -40,8 +40,8 @@ async def create_deck(
 
     with db:
         db.insert(
-            "decks", ("owner", "name", "description", "created_at", "accessed_at", "public"),
-            (actor.username, template.name, template.description, utc_now(), utc_now(), template.public)
+            "decks", ("owner", "name", "description", "created_at", "updated_at", "accessed_at", "public"),
+            (actor.username, template.name, template.description, utc_now(), utc_now(), utc_now(), template.public)
         )
         deck_id = db.execute("SELECT id FROM decks ORDER BY id DESC LIMIT 1;").fetchone()[0]
         db.insert_many(
@@ -70,11 +70,9 @@ async def replace_deck(
     deps.check_for_resource_owner_or_admin(deck.owner, actor)
     with db:
         db.execute("DELETE FROM cards WHERE deck_id = ?;", [deck.id])
-        db.execute("DELETE FROM decks WHERE id = ?;", [deck.id])
-        db.insert(
-            "decks", ("id", "owner", "name", "description", "created_at", "accessed_at", "public"),
-            (deck.id, deck.owner, t.name, t.description, deck.created_at, utc_now(), t.public)
-        )
+        db.execute("""
+            UPDATE decks SET name = ?, description = ?, updated_at = ?, public = ? WHERE id = ?;
+        """, (t.name, t.description, utc_now(), t.public, deck.id))
         db.insert_many(
             "cards", ("deck_id", "term", "definition"),
             [(deck.id, c.term, c.definition) for c in t.cards]
