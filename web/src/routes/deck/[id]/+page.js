@@ -6,7 +6,8 @@ import { error } from '@sveltejs/kit';
 
 export async function load({ params, parent }) {
   const { api } = await parent();
-  const deck = await api.get(`/deck/${params.id}`, { authenticated: "if-possible" }).catch((resp) => {
+  const id = params.id.split(":")[0];
+  const deck = await api.get(`/deck/${id}`, { authenticated: "if-possible" }).catch((resp) => {
     if (resp.status == 401) {
       throw error(401, "not authenticated, please log in");
     }

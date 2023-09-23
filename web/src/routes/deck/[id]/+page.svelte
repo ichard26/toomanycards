@@ -111,8 +111,21 @@
     dealCard();
   }
 
-  // For debugging only.
-  window.submitAnswer = submitAnswer;
+  if (browser) {
+    window.submitAnswer = submitAnswer;  // For debugging only.
+    const normalizeCharacter = (c) => {
+      if (c.match(/[a-z0-9\-]/)) { return c; }
+      else if (c.match(/[\(\)]/)) { return ""; }
+      else { return "-"; }
+    };
+    // Regex trick to remove consecutive duplicates: https://stackoverflow.com/a/55636681
+    const normalizedName = [...deck.name.toLowerCase()].map(normalizeCharacter)
+                             .join("").replace(/(.)\1+/g, "$1");
+    const url = new URL(window.location.href)
+    const URLPrefix = url.pathname.split("/").slice(0, -1).join("/")
+    url.pathname = `${URLPrefix}/${deck.id}:${normalizedName}`;
+    window.history.replaceState(null, "", url);
+  }
 </script>
 
 <svelte:head>
