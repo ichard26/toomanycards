@@ -51,22 +51,19 @@ async def add_process_time_header(request: Request, call_next):
         db = open_sqlite_connection()
         try:
             with db:
-                db.execute("""
-                INSERT INTO requests(datetime, ip, useragent, verb, path, code, duration)
-                VALUES(?, ?, ?, ?, ?, ?, ?);
-                """, entry)
+                db.insert("requests", entry)
         finally:
             db.close()
 
-    entry = (
-        utc_now(),
-        getattr(request.client, "host", None),
-        request.headers.get("User-Agent"),
-        request.method,
-        request.url.path,
-        response.status_code,
-        elapsed,
-    )
+    entry = {
+        "datetime": utc_now(),
+        "ip": getattr(request.client, "host", None),
+        "useragent": request.headers.get("User-Agent"),
+        "verb": request.method,
+        "path": request.url.path,
+        "code": response.status_code,
+        "duration": elapsed,
+    }
     response.background = BackgroundTask(log)
     response.headers["Server-Timing"] = f"endpoint;dur={elapsed:.1f}"
     return response

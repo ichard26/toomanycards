@@ -61,14 +61,10 @@ def add_auth_session(
     refresh_token = "R:" + secrets.token_hex()
     refresh_expiry = utc_now() + session_lifetime
     with db:
-        db.execute(
-            """
-            INSERT INTO sessions(
-                username, refresh_token, refresh_expiry, access_token, access_expiry, created_at
-            )
-            VALUES(?, ?, ?, ?, ?, ?);
-            """,
-            (username, refresh_token, refresh_expiry, access_token, access_expiry, utc_now())
+        db.insert(
+            "sessions",
+            ("username", "refresh_token", "refresh_expiry", "access_token", "access_expiry", "created_at"),
+            (username, refresh_token, refresh_expiry, access_token, access_expiry, utc_now()),
         )
     return (access_token, refresh_token)
 
@@ -121,18 +117,14 @@ async def create_new_user(
     if db.get_user(username) is not None:
         raise HTTPException(status_code=400, detail="Username already exists!")
 
-    data = {
-        "username": username,
-        "password": passlib_context.hash(password),
-        "full_name": full_name,
-        "is_admin": False,
-        "created_at": utc_now(),
-    }
     with db:
-        db.execute("""
-            INSERT INTO users (username, hashed_password, full_name, is_admin, created_at)
-            VALUES (:username, :password, :full_name, :is_admin, :created_at);
-        """, data)
+        db.insert("users", {
+            "username": username,
+            "hashed_password": passlib_context.hash(password),
+            "full_name": full_name,
+            "is_admin": False,
+            "created_at": utc_now(),
+        })
     return await login_for_access_token(
         username, password, "no-csrf-here", db, request, response, background_tasks
     )

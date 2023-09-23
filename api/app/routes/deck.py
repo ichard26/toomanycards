@@ -43,13 +43,13 @@ async def create_deck(
         raise HTTPException(400, detail="Reached maximum deck count")
 
     with db:
-        db.execute(
-            "INSERT INTO decks (owner, name, description, created_at) VALUES(?, ?, ?, ?);",
-            (actor.username, template.name, template.description, utc_now()),
+        db.insert(
+            "decks", ("owner", "name", "description", "created_at", "accessed_at"),
+            (actor.username, template.name, template.description, utc_now(), utc_now())
         )
         deck_id = db.execute("SELECT id FROM decks ORDER BY id DESC LIMIT 1;").fetchone()[0]
-        db.executemany(
-            "INSERT INTO cards (deck_id, term, definition) VALUES(?, ?, ?)",
+        db.insert_many(
+            "cards", ("deck_id", "term", "definition"),
             [(deck_id, c.term, c.definition) for c in template.cards]
         )
     return deck_id
@@ -72,12 +72,12 @@ async def replace_deck(
     with db:
         db.execute("DELETE FROM cards WHERE deck_id = ?;", [deck.id])
         db.execute("DELETE FROM decks WHERE id = ?;", [deck.id])
-        db.execute(
-            "INSERT INTO decks (id, owner, name, description, created_at) VALUES(?, ?, ?, ?, ?);",
-            (deck.id, deck.owner, t.name, t.description, deck.created_at),
+        db.insert(
+            "decks", ("id", "owner", "name", "description", "created_at", "accessed_at"),
+            (deck.id, deck.owner, t.name, t.description, deck.created_at, utc_now())
         )
-        db.executemany(
-            "INSERT INTO cards (deck_id, term, definition) VALUES(?, ?, ?)",
+        db.insert_many(
+            "cards", ("deck_id", "term", "definition"),
             [(deck.id, c.term, c.definition) for c in t.cards]
         )
 

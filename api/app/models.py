@@ -21,7 +21,8 @@ class Card(BaseModel):
 class Deck(BaseModel):
     id: DeckID
     owner: Optional[Username]
-    created_at: str
+    created_at: datetime.datetime
+    accessed_at: datetime.datetime
     name: str
     description: str
     cards: list[Card]
@@ -31,7 +32,7 @@ class User(BaseModel):
     username: str
     full_name: str
     is_admin: bool
-    created_at: str
+    created_at: datetime.datetime
     decks: list[DeckID]
 
 

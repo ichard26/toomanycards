@@ -58,6 +58,7 @@ CREATE TABLE "decks" (
     "description"      TEXT NOT NULL,
     "owner"            TEXT,
     "created_at"       TEXT NOT NULL,
+    "accessed_at"      TEXT NOT NULL,
     FOREIGN KEY("owner") REFERENCES "users"("username")
 );
 
@@ -76,7 +77,7 @@ CREATE TABLE "requests" (
     "verb"       TEXT NOT NULL,
     "path"       TEXT NOT NULL,
     "code"       INTEGER NOT NULL,
-    "duration"   REAL NOT NULL,
+    "duration"   REAL NOT NULL
 );
 
 CREATE TABLE "sessions" (
