@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import sqlite3
-from typing import Annotated, AsyncIterator, Optional
+from typing import Annotated, AsyncIterator, NoReturn, Optional
 
 from fastapi import Depends, HTTPException, Path, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -17,6 +17,14 @@ from .utils import utc_now
 def check_for_resource_owner_or_admin(resource_owner, actor: User) -> None:
     if not actor.is_admin and resource_owner != actor.username:
         raise HTTPException(status_code=403, detail="Resource does not belong to you.")
+
+
+def raise_credentials_error() -> NoReturn:
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials (missing, invalid, or expired access token)",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 async def setup_database_connection() -> AsyncIterator[sqlite3.Connection]:
@@ -61,24 +69,19 @@ async def require_access_token(
     ],
     db: DBConnection,
 ) -> AuthSession:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials (missing, invalid, or expired access token)",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     if token is None:
-        raise credentials_exception
+        raise_credentials_error()
 
     # Strip enclosing quotes so copying the API response is painless.
     row = db.execute(
         "SELECT * FROM sessions WHERE access_token = ?;", [token.credentials.strip("\"'")]
     ).fetchone()
     if row is None:
-        raise credentials_exception
+        raise_credentials_error()
 
     session = AuthSession(**row)
     if utc_now() > session.access_expiry:
-        raise credentials_exception
+        raise_credentials_error()
 
     return session
 
@@ -87,6 +90,20 @@ async def require_signed_in_user(
     session: Annotated[AuthSession, Depends(require_access_token)], db: DBConnection,
 ) -> UserInDB:
     return db.get_user(session.username)
+
+
+async def may_have_signed_in_user(
+    token: Annotated[
+        Optional[HTTPAuthorizationCredentials], Depends(HTTPBearer(auto_error=False))
+    ],
+    db: DBConnection,
+) -> Optional[UserInDB]:
+    try:
+        session = await require_access_token(token, db)
+        return db.get_user(session.username)
+    except HTTPException:
+        # Fallback to no user if credentials are missing, invalid, or expired.
+        return None
 
 
 async def require_admin_user(user: Annotated[UserInDB, Depends(require_signed_in_user)]) -> UserInDB:
@@ -110,6 +127,7 @@ ExistingCard = Annotated[tuple[Card, Deck], Depends(require_existing_card)]
 ExistingDeck = Annotated[Deck, Depends(require_existing_deck)]
 ExistingUser = Annotated[UserInDB, Depends(require_existing_username)]
 SignedInUser = Annotated[UserInDB, Depends(require_signed_in_user)]
+MaybeSignedInUser = Annotated[UserInDB, Depends(may_have_signed_in_user)]
 SignedInAdmin = Annotated[UserInDB, Depends(require_admin_user)]
 ValidAccessToken = Annotated[AuthSession, Depends(require_access_token)]
 ValidRefreshCookie = Annotated[AuthSession, Depends(require_refresh_cookie)]

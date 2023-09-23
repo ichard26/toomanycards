@@ -31,17 +31,23 @@ export class API {
   }
 
   async request(method, path, { authenticated = true, retry = true, body, headers, priority = "auto" }) {
+    // TODO: rework authentication management entirely because this is dumb and
+    // wayyyy too hard to read...
     const args = { method, headers: {}, body, credentials: "include", priority };
-    if (authenticated) {
+    if (authenticated === true) {
       if (this.accessToken === null && !await this._refreshSession()) {
         return Promise.reject({ status: 401, message: "Unable to refresh session"});
       }
       args.headers["Authorization"] = `Bearer ${this.accessToken}`;
+    } else if (authenticated === "if-possible") {
+      // TODO: make sure this does the right thing on automatic retry...
+      if (this.accessToken === null) await this._refreshSession();
+      if (this.accessToken) args.headers["Authorization"] = `Bearer ${this.accessToken}`;
     }
     args.headers = { ...args.headers, ...headers }
     return this.fetch(`${this.pathPrefix}${path}`, args).then(async (resp) => {
       if (!resp.ok) {
-        if (resp.status === 401 && authenticated && retry) {
+        if (resp.status === 401 && authenticated === true && retry) {
           // If the request fails with 401, then attempt to refresh the session and retry
           // the request with (hopefully) valid credentials.
           if (await this._refreshSession()) {

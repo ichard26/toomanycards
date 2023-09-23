@@ -16,6 +16,7 @@ class DeckTemplate(BaseModel):
     name: str = Field(min_length=1, max_length=50)
     description: str = Field(max_length=200)
     cards: list[CardTemplate]
+    public: bool = False
 
     @validator("cards")
     def cards_length_check(cls, v):
@@ -39,8 +40,8 @@ async def create_deck(
 
     with db:
         db.insert(
-            "decks", ("owner", "name", "description", "created_at", "accessed_at"),
-            (actor.username, template.name, template.description, utc_now(), utc_now())
+            "decks", ("owner", "name", "description", "created_at", "accessed_at", "public"),
+            (actor.username, template.name, template.description, utc_now(), utc_now(), template.public)
         )
         deck_id = db.execute("SELECT id FROM decks ORDER BY id DESC LIMIT 1;").fetchone()[0]
         db.insert_many(
@@ -51,8 +52,11 @@ async def create_deck(
 
 
 @router.get("/{deck_id}")
-async def get_deck(actor: deps.SignedInUser, deck: deps.ExistingDeck) -> Deck:
-    deps.check_for_resource_owner_or_admin(deck.owner, actor)
+async def get_deck(actor: deps.MaybeSignedInUser, deck: deps.ExistingDeck) -> Deck:
+    if not deck.public:
+        if actor is None:
+            deps.raise_credentials_error()
+        deps.check_for_resource_owner_or_admin(deck.owner, actor)
     return deck
 
 
@@ -68,8 +72,8 @@ async def replace_deck(
         db.execute("DELETE FROM cards WHERE deck_id = ?;", [deck.id])
         db.execute("DELETE FROM decks WHERE id = ?;", [deck.id])
         db.insert(
-            "decks", ("id", "owner", "name", "description", "created_at", "accessed_at"),
-            (deck.id, deck.owner, t.name, t.description, deck.created_at, utc_now())
+            "decks", ("id", "owner", "name", "description", "created_at", "accessed_at", "public"),
+            (deck.id, deck.owner, t.name, t.description, deck.created_at, utc_now(), t.public)
         )
         db.insert_many(
             "cards", ("deck_id", "term", "definition"),

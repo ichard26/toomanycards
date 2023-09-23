@@ -21,6 +21,7 @@ class Card(BaseModel):
 class Deck(BaseModel):
     id: DeckID
     owner: Optional[Username]
+    public: bool
     created_at: datetime.datetime
     accessed_at: datetime.datetime
     name: str
