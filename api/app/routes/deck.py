@@ -85,3 +85,10 @@ async def delete_deck(
     with db:
         db.execute("DELETE FROM cards WHERE deck_id = ?;", [deck.id])
         db.execute("DELETE FROM decks WHERE id = ?;", [deck.id])
+
+
+@router.post("/{deck_id}/accessed")
+async def bump_deck(actor: deps.SignedInUser, deck: deps.ExistingDeck, db: deps.DBConnection) -> None:
+    deps.check_for_resource_owner_or_admin(deck.owner, actor)
+    with db:
+        db.execute("UPDATE decks SET accessed_at = ? WHERE id = ?", [utc_now(), deck.id])
