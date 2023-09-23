@@ -6,15 +6,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, validator
 
 from .. import dependencies as deps
-from ..models import Deck, DeckID
+from ..models import CardTemplate, Deck, DeckID
 from ..utils import utc_now
 
 router = APIRouter(prefix="/deck", tags=["deck"])
-
-
-class CardTemplate(BaseModel):
-    term: str = Field(min_length=1, max_length=50)
-    definition: str = Field(min_length=1, max_length=50)
 
 
 class DeckTemplate(BaseModel):

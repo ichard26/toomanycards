@@ -10,7 +10,7 @@ from starlette.background import BackgroundTask
 
 from .constants import LOG_CONFIG, USE_UNIX_DOMAIN_SOCKET
 from .database import open_sqlite_connection
-from .routes import admin, auth, deck
+from .routes import admin, auth, card, deck
 from .utils import ProxyHeadersMiddleware, utc_now
 
 __version__ = "0.1.0"
@@ -37,6 +37,7 @@ app = FastAPI(
 
 app.include_router(admin.router)
 app.include_router(auth.router)
+app.include_router(card.router)
 app.include_router(deck.router)
 app.add_middleware(ProxyHeadersMiddleware, require_none_client=USE_UNIX_DOMAIN_SOCKET)
 

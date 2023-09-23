@@ -5,7 +5,7 @@
 import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 Username = str
 CardID = str
@@ -47,3 +47,8 @@ class AuthSession(BaseModel):
     access_token: str
     access_expiry: datetime.datetime
     created_at: datetime.datetime
+
+
+class CardTemplate(BaseModel):
+    term: str = Field(min_length=1, max_length=50)
+    definition: str = Field(min_length=1, max_length=50)

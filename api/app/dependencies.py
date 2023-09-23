@@ -10,7 +10,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .constants import REFRESH_COOKIE_NAME
 from .database import SQLiteConnection, open_sqlite_connection
-from .models import AuthSession, Deck, User, UserInDB
+from .models import AuthSession, Card, Deck, User, UserInDB
 from .utils import utc_now
 
 
@@ -46,6 +46,13 @@ async def require_existing_deck(
         return deck
 
     raise HTTPException(status_code=404, detail="Deck not found")
+
+
+async def require_existing_card(card_id: Annotated[str, Path], db: DBConnection) -> Card:
+    if row := db.execute("SELECT * FROM cards WHERE id = ?", [card_id]).fetchone():
+        return Card(**row), db.get_deck(row["deck_id"])
+
+    raise HTTPException(404, "Card not found")
 
 
 async def require_access_token(
@@ -96,6 +103,7 @@ async def require_refresh_cookie(request: Request, db: DBConnection) -> AuthSess
     raise HTTPException(401, detail="missing, invalid, or expired refresh token")
 
 
+ExistingCard = Annotated[tuple[Card, Deck], Depends(require_existing_card)]
 ExistingDeck = Annotated[Deck, Depends(require_existing_deck)]
 ExistingUser = Annotated[UserInDB, Depends(require_existing_username)]
 SignedInUser = Annotated[UserInDB, Depends(require_signed_in_user)]
