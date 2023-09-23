@@ -69,7 +69,10 @@ async def require_access_token(
     if token is None:
         raise credentials_exception
 
-    row = db.execute("SELECT * FROM sessions WHERE access_token = ?;", [token.credentials]).fetchone()
+    # Strip enclosing quotes so copying the API response is painless.
+    row = db.execute(
+        "SELECT * FROM sessions WHERE access_token = ?;", [token.credentials.strip("\"'")]
+    ).fetchone()
     if row is None:
         raise credentials_exception
 
