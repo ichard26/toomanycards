@@ -18,6 +18,8 @@ from fastapi import (
     Response,
     status,
 )
+from florapi import utc_now
+from florapi.security import RateLimiter
 from passlib.context import CryptContext
 
 from .. import dependencies as deps
@@ -31,7 +33,6 @@ from ..constants import (
     TLS_ENABLED,
 )
 from ..models import User
-from ..utils import RateLimiter, utc_now
 
 AccessToken = str
 RefreshToken = str

@@ -3,11 +3,11 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from fastapi import APIRouter, HTTPException
+from florapi import utc_now
 from pydantic import BaseModel, Field, validator
 
 from .. import dependencies as deps
 from ..models import CardTemplate, Deck, DeckID
-from ..utils import utc_now
 
 router = APIRouter(prefix="/deck", tags=["deck"])
 

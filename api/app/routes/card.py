@@ -3,10 +3,10 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from fastapi import APIRouter
+from florapi import utc_now
 
 from .. import dependencies as deps
 from ..models import CardTemplate
-from ..utils import utc_now
 
 router = APIRouter(prefix="/card", tags=["deck"])
 

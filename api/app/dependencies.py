@@ -7,11 +7,11 @@ from typing import Annotated, AsyncIterator, NoReturn, Optional
 
 from fastapi import Depends, HTTPException, Path, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from florapi import utc_now
 
 from .constants import REFRESH_COOKIE_NAME
 from .database import SQLiteConnection, open_sqlite_connection
 from .models import AuthSession, Card, Deck, User, UserInDB
-from .utils import utc_now
 
 
 def check_for_resource_owner_or_admin(resource_owner, actor: User) -> None:

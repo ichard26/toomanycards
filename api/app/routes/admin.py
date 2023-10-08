@@ -3,10 +3,10 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from fastapi import APIRouter
+from florapi import flatten
 
 from .. import dependencies as deps
 from ..models import AuthSession, Deck, User
-from ..utils import flatten
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

@@ -77,9 +77,10 @@ CREATE TABLE "requests" (
     "datetime"   TEXT PRIMARY KEY NOT NULL,
     "ip"         TEXT,
     "useragent"  TEXT,
+    "referer"    TEXT,
     "verb"       TEXT NOT NULL,
     "path"       TEXT NOT NULL,
-    "code"       INTEGER NOT NULL,
+    "status"     INTEGER NOT NULL,
     "duration"   REAL NOT NULL
 );
 
@@ -93,7 +94,7 @@ CREATE TABLE "sessions" (
     FOREIGN KEY("username") REFERENCES "users"("username")
 );
 
-CREATE TABLE "ratelimits" (
+CREATE TABLE "_ratelimits" (
     "key"       TEXT NOT NULL,
     "duration"  INTEGER NOT NULL,
     "value"     INTEGER NOT NULL,

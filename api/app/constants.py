@@ -2,45 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import os
-from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, Final, TypeVar
+from typing import Final
 
-T = TypeVar("T")
-_MISSING: Final = object()
-
-
-def TimeDelta(value: str) -> timedelta:
-    kwargs = {}
-    for argument_string in value.replace(" ", "").split(","):
-        unit, value = argument_string.split("=")
-        kwargs[unit] = int(value)
-    return timedelta(**kwargs)
-
-
-def opt(name: str, type: Callable[[Any], T], default: Any = _MISSING) -> T:
-    """Read a value from the environment, after conversion.
-
-    The environment variable read is the option name uppercased with dashes
-    replaced with underscores and prefixed with TMC_. Example:
-
-        use-tls -> TMC_USE_TLS
-
-    If the envvar is missing, then the default is used. If a default is not
-    specified, a RuntimeError is raised.
-    """
-    name = "TMC_" + name.replace("-", "_").upper()
-    raw_value = os.getenv(name, default)
-    if raw_value is _MISSING:
-        raise RuntimeError(f"Missing environment variable: {name}")
-
-    try:
-        return type(raw_value)
-    except (TypeError, ValueError) as error:
-        context = f"|\n╰─> {error.__class__.__name__}: {error}"
-        raise RuntimeError(f"Invalid environment variable: {name}\n{context}")
-
+from florapi.configuration import Options, TimeDelta
 
 LOG_CONFIG: Final = {
     "version": 1,
@@ -64,6 +29,7 @@ LOG_CONFIG: Final = {
 }
 
 # fmt: off
+opt = Options("TMC")
 # --- Database --- #
 
 DATABASE_PATH: Final = opt("database", Path)
@@ -82,3 +48,5 @@ MAX_SESSIONS: Final          = opt("max-sessions",          int,       default=5
 
 TLS_ENABLED: Final            = opt("tls",                bool, default=False)
 USE_UNIX_DOMAIN_SOCKET: Final = opt("unix-domain-socket", bool, default=False)
+
+opt.report_errors()
