@@ -134,19 +134,20 @@
 
 <h1>{deck.name}</h1>
 <p><b>{deck.description}</b></p>
-<button on:click={() => {
-  difficulty = (difficulty === "exact-answer" ? "multiple-choice" : "exact-answer");
-  if (browser) localStorage.setItem("tmc-app-difficulty", difficulty);
-  dealCard();
-}}>Difficulty: {difficulty}</button>
-<button on:click={() => {
-  pool.flip();
-  mode = pool.flipped ? "definition" : "term";
-  if (browser) localStorage.setItem("tmc-app-mode", mode);
-  dealCard();
-}}>Mode: {mode}</button>
+<div class="knobs">
+  <button on:click={() => {
+    difficulty = (difficulty === "exact-answer" ? "multiple-choice" : "exact-answer");
+    if (browser) localStorage.setItem("tmc-app-difficulty", difficulty);
+    dealCard();
+  }}>Difficulty: {difficulty}</button>
+  <button on:click={() => {
+    pool.flip();
+    mode = pool.flipped ? "definition" : "term";
+    if (browser) localStorage.setItem("tmc-app-mode", mode);
+    dealCard();
+  }}>Mode: {mode}</button>
+</div>
 <p>{cardsLeft}/{originalPool.size} cards left</p>
-
 {#if cardsLeft === 0}
   {#if originalPool.size === 0}
     <p class="card-text">empty deck, sorry</p>
@@ -177,10 +178,18 @@
 <p>{resultMessage}</p>
 
 <style>
+* {
+  text-align: center;
+}
 .card-text {
   color: var(--primary-accent-color);
   font-size: 3em;
   font-weight: bold;
+}
+
+div.knobs button {
+  --color: ButtonText;
+  --background-color: ButtonFace;
 }
 
 .selection-div button {

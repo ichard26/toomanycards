@@ -7,7 +7,9 @@ import { API } from "../lib/api";
 export const ssr = false;
 
 export async function load({ fetch }) {
+  const api = new API("/api", fetch);
   return {
-    api: new API("/api", fetch)
+    api: api,
+    userPromise: api.currentUser({ priority: "low" }),
   };
 }
