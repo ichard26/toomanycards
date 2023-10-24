@@ -13,63 +13,6 @@
     <link rel="apple-touch-icon" href="https://ichard26.github.io/apple-touch-icon.png">
     <link rel="mask-icon" href="https://ichard26.github.io/safari-pinned-tab.svg">
     %sveltekit.head%
-    <style>
-      :root {
-        color-scheme: light dark;
-        --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        --primary-accent-color: hsl(341, 100%, 44%);
-        --faded-primary-accent-color: color-mix(in srgb, var(--primary-accent-color) 30%, transparent);
-      }
-
-      a {
-        color: var(--primary-accent-color);
-      }
-
-      button {
-        --color: white;
-        --background-color: var(--primary-accent-color);
-        border: 0;
-        border-radius: 5px;
-        box-shadow: 1px 2px color-mix(in srgb, var(--background-color) 30%, transparent);
-        padding: 5px;
-        background-color: var(--background-color);
-        color: var(--color);
-        font-weight: bold;
-        cursor: pointer;
-      }
-      button:hover {
-        background-color: color-mix(in srgb, var(--background-color) 70%, transparent);
-      }
-
-      /* https://stackoverflow.com/a/1368286 */
-      button.link {
-        padding: 0!important;
-        border: none;
-        background: none!important;
-        color: var(--primary-accent-color);
-        font-family: var(--font-family);
-        font-size: 1em;
-        text-decoration: underline;
-        cursor: pointer;
-      }
-
-      html, body {
-        width: 100%;
-        margin: 0;
-        font-family: var(--font-family);
-      }
-
-      /* Internal CSS styling library. */
-      .side-margin {
-        margin: 0 5px;
-      }
-      .x3-side-margin {
-        margin: 0 15px;
-      }
-      .bold {
-        font-weight: bold;
-      }
-    </style>
   </head>
   <body data-sveltekit-preload-data="hover">
     <div style="display: contents;">%sveltekit.body%</div>

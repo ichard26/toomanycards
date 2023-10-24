@@ -18,6 +18,8 @@
 <script>
   import { onMount } from "svelte";
   import { page } from "$app/stores";
+  import "$lib/global.css";
+
   export let data;
   const { api, userPromise } = data
 
