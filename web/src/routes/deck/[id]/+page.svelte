@@ -182,7 +182,7 @@
   text-align: center;
 }
 .card-text {
-  color: var(--primary-accent-color);
+  color: var(--accent-color);
   font-size: 3em;
   font-weight: bold;
 }

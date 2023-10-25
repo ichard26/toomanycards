@@ -7,17 +7,28 @@
 :root {
   color-scheme: light dark;
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  --primary-accent-color: hsl(341, 100%, 44%);
-  --faded-primary-accent-color: color-mix(in srgb, var(--primary-accent-color) 30%, transparent);
+  --accent-color: hsl(341, 100%, 44%);
+  --faded-accent-color: color-mix(in srgb, var(--accent-color) 30%, transparent);
+  --darker-accent-tone: lightgrey;
+  --lighter-accent-tone: rgb(235, 235, 235);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --darker-accent-tone: black;
+    --lighter-accent-tone: rgb(39, 39, 39);
+  }
 }
 
 a {
-  color: var(--primary-accent-color);
+  color: var(--accent-color);
 }
 
 button {
   --color: white;
-  --background-color: var(--primary-accent-color);
+  --background-color: var(--accent-color);
+  --hover-background-color: color-mix(in srgb, var(--background-color) 70%, transparent);
+  --active-background-color: color-mix(in srgb, var(--hover-background-color), black 10%);
   border: 0;
   border-radius: 5px;
   box-shadow: 1px 2px color-mix(in srgb, var(--background-color) 30%, transparent);
@@ -27,26 +38,42 @@ button {
   font-weight: bold;
   cursor: pointer;
 }
+
 button:hover {
-  background-color: color-mix(in srgb, var(--background-color) 70%, transparent);
+  background-color: var(--hover-background-color);
 }
 
-/* https://stackoverflow.com/a/1368286 */
-button.link {
-  padding: 0!important;
-  border: none;
-  background: none!important;
-  color: var(--primary-accent-color);
-  font-family: var(--font-family);
-  font-size: 1em;
-  text-decoration: underline;
-  cursor: pointer;
+button:active, button.pressed {
+  background-color: var(--active-background-color);
+  box-shadow: inset 2px 3px 3px color-mix(in srgb, var(--background-color), black 30%);
+}
+
+button:disabled {
+  filter: grayscale(0.8);
+  box-shadow: none;
+}
+
+button.pressed {
+  filter: grayscale(0.25);
 }
 
 html, body {
   width: 100%;
   margin: 0;
   font-family: var(--font-family);
+}
+
+:modal {
+  border-color: var(--faded-accent-color);
+  border-radius: 5px;
+}
+::backdrop {
+  backdrop-filter: grayscale(1) blur(2px);
+}
+
+hr {
+  border: 2px solid var(--lighter-accent-tone);
+  border-radius: 5px;
 }
 
 /* Internal CSS styling library. */
@@ -63,5 +90,25 @@ html, body {
   font-weight: 500;
 }
 .accent-color {
-  color: var(--primary-accent-color);
+  color: var(--accent-color);
+}
+
+/* https://stackoverflow.com/a/1368286 */
+button.link {
+  padding: 0!important;
+  border: none;
+  background: none!important;
+  color: var(--accent-color);
+  font-family: var(--font-family);
+  font-size: 1em;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tmc-colourful-text-always, .tmc-colourful-text-hover:hover {
+  background-image: linear-gradient(to right, #ff5f6d, orange);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  transition: 75ms ease-in color;
 }

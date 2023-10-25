@@ -38,7 +38,9 @@
 
 <header>
   <p class="header-branding">
-    <span class="bold brand-text">TooManyCards</span>
+    <span class="bold brand-text tmc-colourful-text-hover"
+      class:tmc-colourful-text-always={["/settings", "/admin"].includes($page.url.pathname)}
+    >TooManyCards</span>
     <span class="author-text">by&nbsp;richard&nbsp;&lt;3</span>
   </p>
   <nav class="header-navigation">
@@ -82,9 +84,8 @@
     display: grid;
     grid-template-columns: minmax(max-content, 1fr) 1fr 1fr;
     align-items: center;
-    box-shadow: 1px 2px 3px lightgray;
+    box-shadow: 1px 2px 3px var(--darker-accent-tone);
     background-color: Canvas;
-
   }
 
   header > :where(p, div) {
@@ -93,13 +94,6 @@
 
   .brand-text {
     font-size: larger;
-  }
-  .brand-text:hover {
-    background-image: linear-gradient(to right, #ff5f6d, orange);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    transition: 75ms ease-in color;
   }
   .author-text {
     font-size: smaller;
@@ -114,7 +108,7 @@
   nav a {
     padding: 5px;
     border-radius: 5px;
-    background-color: color-mix(in srgb, var(--primary-accent-color) 5%, transparent);
+    background-color: color-mix(in srgb, var(--accent-color) 5%, transparent);
     text-decoration: none;
   }
   nav a:hover {

@@ -40,6 +40,8 @@
 <svelte:head>
   <title>Login</title>
 </svelte:head>
+<div>
+
 <h1>Login</h1>
 
 <form action="/api/login" method="POST">
@@ -48,11 +50,11 @@
   <input name="password" autocomplete="current-password" placeholder="password" type="password" bind:value={password}>
   <p><button type="submit" on:click|preventDefault={submitCredentials}>Submit</button></p>
 </form>
-
 <p>{message}</p>
+</div>
 
 <style>
-  form {
+  div, form {
     display: grid;
     justify-items: center;
   }
