@@ -18,6 +18,7 @@
 <script>
   import { onMount } from "svelte";
   import { page } from "$app/stores";
+  import { Toaster, toast } from "svelte-sonner";
   import "$lib/global.css";
 
   export let data;
@@ -30,8 +31,17 @@
     })();
   });
 
+  // https://stackoverflow.com/a/57795495
+  const colorSchemeMatch = window.matchMedia("(prefers-color-scheme: dark)");
+  let colorScheme = colorSchemeMatch.matches ? "dark" : "light";
+  colorSchemeMatch.addEventListener("change", event => {
+    colorScheme = event.matches ? "dark" : "light";
+  });
+
   async function logout() {
+    toast.loading("Logging out ...");
     await api.post("/logout");
+    toast.success("Goodbye!");
     document.location.reload();
   }
 </script>
@@ -66,7 +76,9 @@
       <span class="x3-side-margin">{user.full_name} [<b>{user.username}</b>]</span>
       <button on:click={logout}>Log out</button>
     {:else}
-      <a href="/login?return_to={encodeURIComponent($page.url.pathname)}" tabindex="-1"><button type="button" >Log in</button></a>
+      <a href="/login?return_to={encodeURIComponent($page.url.pathname)}" tabindex="-1">
+        <button type="button" >Log in</button>
+      </a>
     {/if}
   </div>
 </header>
@@ -74,6 +86,7 @@
 <main>
   <slot />
 </main>
+<Toaster closeButton richColors theme={colorScheme} position="bottom-center" />
 
 <style>
   header {

@@ -3,11 +3,14 @@
    - file, You can obtain one at https://mozilla.org/MPL/2.0/. -->
 
 <script>
+  import { toast } from "svelte-sonner";
+
   export let data;
   let username, password;
   let message = "";
 
   async function submitCredentials(e) {
+    toast.loading("Logging in ...")
     data.api.post("/login", {
       authenticated: false,
       headers: {
@@ -19,12 +22,11 @@
       })
     }).then(() => {
       message = "Success! 🎉";
+      toast.success("Logged in! 🎉")
       const returnTo = new URL(location.href).searchParams.get("return_to");
-      if (returnTo) {
-        document.location.href = decodeURIComponent(returnTo);
-      } else {
-        document.location.href = "/";
-      }
+      setTimeout(() => {
+        document.location.href = returnTo ? decodeURIComponent(returnTo) : "/"
+      }, 500);
     }).catch((resp) => {
       if (resp.status == 401) { message = "Incorrect username or password, please try again."; }
       else {
