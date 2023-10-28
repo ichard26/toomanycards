@@ -2,6 +2,8 @@
 # https://www.sjoerdlangkemper.nl/2016/11/07/current-state-of-breach-attack/
 # https://quixdb.github.io/squash-benchmark/
 # https://dgu2000.medium.com/working-with-self-signed-certificates-in-chrome-walkthrough-edition-a238486e6858
+# https://mcilis.medium.com/how-to-create-a-client-certificate-with-configuration-using-openssl-89214dca58ec
+# https://serverfault.com/questions/9708/what-is-a-pem-file-and-how-does-it-differ-from-other-openssl-generated-key-file
 
 map $http_upgrade $connection_upgrade {
     default upgrade;

@@ -43,7 +43,7 @@ button:hover {
   background-color: var(--hover-background-color);
 }
 
-button:active, button.pressed {
+button:active, button.pressed, .tmc-toggle.pressed button {
   background-color: var(--active-background-color);
   box-shadow: inset 2px 3px 3px color-mix(in srgb, var(--background-color), black 30%);
 }
@@ -51,10 +51,6 @@ button:active, button.pressed {
 button:disabled {
   filter: grayscale(0.8);
   box-shadow: none;
-}
-
-button.pressed {
-  filter: grayscale(0.25);
 }
 
 html, body {
