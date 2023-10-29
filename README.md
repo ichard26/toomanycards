@@ -41,6 +41,7 @@ Lower priority:
 - Private deck sharing (à la Google Docs)
 - Admin UI
 - Markdown support
+- An API test suite
 
 ## API database (SQLite) schema
 
@@ -48,8 +49,8 @@ Lower priority:
 CREATE TABLE "users" (
     "username"         TEXT PRIMARY KEY NOT NULL,
     "hashed_password"  TEXT NOT NULL,
-    "full_name"        TEXT,
-    "is_admin"         INTEGER NOT NULL,
+    "display_name"        TEXT,
+    "is_admin"         INTEGER NOT NULL DEFAULT 0,
     "created_at"       TEXT NOT NULL,
 );
 

@@ -32,7 +32,7 @@ class Deck(BaseModel):
 
 class User(BaseModel):
     username: str
-    full_name: str
+    display_name: str
     is_admin: bool
     created_at: datetime.datetime
     decks: list[DeckID]

@@ -100,7 +100,7 @@ async def purge_expired_sessions(purge_delta: timedelta, db: deps.DBConnection) 
 async def create_new_user(
     username: Annotated[str, Form(min_length=1, max_length=20, regex=r"^[a-z0-9\.-]+$")],
     password: Annotated[str, Form(min_length=1, max_length=100)],
-    full_name: Annotated[str, Form(max_length=50)],
+    display_name: Annotated[str, Form(max_length=50)],
     challenge: Annotated[int, Query(gt=25, lt=27)],
     db: deps.DBConnection,
     request: Request,
@@ -122,7 +122,7 @@ async def create_new_user(
         db.insert("users", {
             "username": username,
             "hashed_password": passlib_context.hash(password),
-            "full_name": full_name,
+            "display_name": display_name,
             "is_admin": False,
             "created_at": utc_now(),
         })

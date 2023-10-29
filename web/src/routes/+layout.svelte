@@ -13,12 +13,16 @@
   - https://stackoverflow.com/a/56678169
   - https://developer.mozilla.org/en-US/docs/Web/CSS/grid-template-columns
   - https://bootcamp.uxdesign.cc/gradient-text-in-css-609068d3f953
+  - https://stackoverflow.com/questions/76449631/render-markup-while-waiting-for-data-from-load-function-in-svelte
+  - https://stackoverflow.com/questions/64219141/using-javascript-how-can-i-detect-a-keypress-event-but-not-when-the-user-is-typ
 -->
 
 <script>
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { Toaster, toast } from "svelte-sonner";
+  import shortcuts from "$lib/shortcuts.js";
   import "$lib/global.css";
 
   export let data;
@@ -29,6 +33,9 @@
     (async () => {
       user = await userPromise;
     })();
+    shortcuts.register({ key: "H", callback: () => goto("/") });
+    shortcuts.register({ key: "S", callback: () => goto("/settings") });
+    return () => { console.log("unmounted"); };
   });
 
   // https://stackoverflow.com/a/57795495
@@ -73,7 +80,7 @@
     {#if user === undefined}
       <span>...loading</span>
     {:else if user !== null}
-      <span class="x3-side-margin">{user.full_name} [<b>{user.username}</b>]</span>
+      <span class="x3-side-margin">{user.display_name} [<b>{user.username}</b>]</span>
       <button on:click={logout}>Log out</button>
     {:else}
       <a href="/login?return_to={encodeURIComponent($page.url.pathname)}" tabindex="-1">
