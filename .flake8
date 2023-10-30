@@ -4,3 +4,4 @@ max-line-length = 100
 extend-ignore = E501, E203, E226, W503, W605, E122, E115, E302
 per-file-ignores =
   api/app/constants.py:E221,E241
+extend-exclude = */vendor/*

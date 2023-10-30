@@ -8,8 +8,9 @@ export const ssr = false;
 
 export async function load({ fetch }) {
   const api = new API("/api", fetch);
+  await api.refreshSession();
   return {
     api: api,
-    userPromise: api.currentUser({ priority: "low" }),
+    user: api.user,
   };
 }

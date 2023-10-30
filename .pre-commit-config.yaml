@@ -1,3 +1,5 @@
+exclude: ^(api/app/vendor/)
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
@@ -24,6 +26,6 @@ repos:
       - id: add-license-header
         name: add-license-header
         language: python
-        entry: python -m scripts.license api/app web/src --yes
+        entry: python -m scripts.license --yes
         additional_dependencies: [click]
         types: [file]

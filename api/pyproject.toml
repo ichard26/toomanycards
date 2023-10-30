@@ -2,3 +2,4 @@
 profile = "black"
 line_length = 100
 extra_standard_library = ["typing_extensions"]
+extend_skip = ["vendor"]

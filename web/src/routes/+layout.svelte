@@ -26,13 +26,9 @@
   import "$lib/global.css";
 
   export let data;
-  const { api, userPromise } = data
+  const { api, user } = data
 
-  let user;
   onMount(() => {
-    (async () => {
-      user = await userPromise;
-    })();
     shortcuts.register({ key: "H", callback: () => goto("/") });
     shortcuts.register({ key: "S", callback: () => goto("/settings") });
     return () => { console.log("unmounted"); };

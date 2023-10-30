@@ -1,6 +1,7 @@
 fastapi >= 0.98.0
 uvicorn[standard]
 florapi @ https://github.com/ichard26/florapi/archive/main.zip
+typing-extensions >= 4.5.0
 
 # For user authentication.
 python-multipart

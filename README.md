@@ -49,7 +49,7 @@ Lower priority:
 CREATE TABLE "users" (
     "username"         TEXT PRIMARY KEY NOT NULL,
     "hashed_password"  TEXT NOT NULL,
-    "display_name"        TEXT,
+    "display_name"     TEXT,
     "is_admin"         INTEGER NOT NULL DEFAULT 0,
     "created_at"       TEXT NOT NULL,
 );
@@ -63,7 +63,7 @@ CREATE TABLE "decks" (
     "created_at"       TEXT NOT NULL,
     "updated_at"       TEXT NOT NULL,
     "accessed_at"      TEXT NOT NULL,
-    FOREIGN KEY("owner") REFERENCES "users"("username")
+    FOREIGN KEY("owner") REFERENCES "users"("username") ON UPDATE CASCADE,
 );
 
 CREATE TABLE "cards" (
@@ -86,6 +86,7 @@ CREATE TABLE "requests" (
 );
 
 CREATE TABLE "sessions" (
+    "id"              TEXT NOT NULL UNIQUE,
     "username"	      TEXT NOT NULL,
     "refresh_token"	  TEXT PRIMARY KEY NOT NULL,
     "refresh_expiry"  TEXT NOT NULL,
@@ -93,6 +94,7 @@ CREATE TABLE "sessions" (
     "access_expiry"   TEXT NOT NULL,
     "created_at"      TEXT NOT NULL,
     FOREIGN KEY("username") REFERENCES "users"("username")
+      ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 CREATE TABLE "_ratelimits" (

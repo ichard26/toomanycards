@@ -31,4 +31,4 @@ async def list_decks(_: deps.SignedInAdmin, db: deps.DBConnection) -> list[Deck]
 
 @router.get("/list-sessions")
 async def list_sessions(_: deps.SignedInAdmin, db: deps.DBConnection) -> list[AuthSession]:
-    return db.get_sign_in_sessions(username=None)
+    return db.get_auth_sessions(username=None)

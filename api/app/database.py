@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import sqlite3
 from typing import Optional
 
 import florapi.sqlite
@@ -9,8 +10,10 @@ from florapi import flatten, utc_now
 
 from . import constants
 from .models import AuthSession, Deck, DeckID, UserInDB, Username
+from .vendor.tsidpy import TSID
 
 florapi.sqlite.register_adaptors()
+sqlite3.register_adapter(TSID, lambda id: str(id))
 
 
 class SQLiteConnection(florapi.sqlite.SQLiteConnection):
@@ -30,7 +33,21 @@ class SQLiteConnection(florapi.sqlite.SQLiteConnection):
         else:
             return None
 
-    def get_sign_in_sessions(
+    def get_auth_session(self, *, access: str = "", refresh: str = "", tsid: str = "") -> Optional[AuthSession]:
+        if sum([bool(access), bool(refresh), bool(tsid)]) != 1:
+            raise ValueError(
+                "must specify only one of an access token, refresh token or TSID to search by"
+            )
+
+        if access:
+            row = self.execute("SELECT * FROM sessions WHERE access_token = ?;", [access]).fetchone()
+        if refresh:
+            row = self.execute("SELECT * FROM sessions WHERE refresh_token = ?;", [refresh]).fetchone()
+        if tsid:
+            row = self.execute("SELECT * FROM sessions WHERE id = ?;", [tsid]).fetchone()
+        return AuthSession(**row) if row else None
+
+    def get_auth_sessions(
         self, username: Optional[Username], include_expired: bool = True
     ) -> list[AuthSession]:
         if username is not None:

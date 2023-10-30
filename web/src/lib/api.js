@@ -17,10 +17,14 @@ export class API {
     }
     this.accessToken = null;
     this._accessTokenPromise = null;
+    this.user = null;
   }
 
-  async currentUser(args) {
-    return this.get("/current-user", args).catch(() => null);
+  async currentUser({ updateCache }) {
+    if (this.user === null || updateCache === true) {
+      this.user = await this.get("/user").catch(() => null);
+    }
+    return this.user;
   }
   async get(path, args) { return this.requestJSON("GET", path, args); }
   async post(path, args) { return this.requestJSON("POST", path, args); }
@@ -35,13 +39,13 @@ export class API {
     // wayyyy too hard to read...
     const args = { method, headers: {}, body, credentials: "include", priority };
     if (authenticated === true) {
-      if (this.accessToken === null && !await this._refreshSession()) {
+      if (this.accessToken === null && !await this.refreshSession()) {
         return Promise.reject({ status: 401, message: "Unable to refresh session"});
       }
       args.headers["Authorization"] = `Bearer ${this.accessToken}`;
     } else if (authenticated === "if-possible") {
       // TODO: make sure this does the right thing on automatic retry...
-      if (this.accessToken === null) await this._refreshSession();
+      if (this.accessToken === null) await this.refreshSession();
       if (this.accessToken) args.headers["Authorization"] = `Bearer ${this.accessToken}`;
     }
     args.headers = { ...args.headers, ...headers }
@@ -50,7 +54,7 @@ export class API {
         if (resp.status === 401 && authenticated === true && retry) {
           // If the request fails with 401, then attempt to refresh the session and retry
           // the request with (hopefully) valid credentials.
-          if (await this._refreshSession()) {
+          if (await this.refreshSession()) {
             return this.request(method, path, { retry: false, body, headers })
           }
         }
@@ -61,19 +65,20 @@ export class API {
     });
   }
 
-  async _refreshSession() {
+  async refreshSession() {
     if (this._accessTokenPromise !== null) {
       return this._accessTokenPromise;
     }
 
     console.log("[API] %cAttempting to refresh session...", "color: gray")
-    this._accessTokenPromise = this.post("/refresh-session", { authenticated: false, retry: false }).then((token) => {
+    this._accessTokenPromise = this.post("/session/refresh", { authenticated: false, retry: false }).then((resp) => {
       console.log(`[API] %cAccess token acquired!`, "color: green");
-      this.accessToken = token;
+      this.accessToken = resp.session.access_token;
+      this.user = resp.user;
       return true;
     }).catch((reason) => {
       console.warn(`[API] Failed to acquire new access token: ${reason}`);
-      this.accessToken = null;
+      this.accessToken = this.user = null;
       return false;
     }).finally(() => { this._accessTokenPromise = null; });
     return this._accessTokenPromise;

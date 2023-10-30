@@ -72,14 +72,10 @@ async def require_access_token(
     if token is None:
         raise_credentials_error()
 
-    # Strip enclosing quotes so copying the API response is painless.
-    row = db.execute(
-        "SELECT * FROM sessions WHERE access_token = ?;", [token.credentials.strip("\"'")]
-    ).fetchone()
-    if row is None:
+    session = db.get_auth_session(access=token.credentials)
+    if session is None:
         raise_credentials_error()
 
-    session = AuthSession(**row)
     if utc_now() > session.access_expiry:
         raise_credentials_error()
 
@@ -115,12 +111,11 @@ async def require_admin_user(user: Annotated[UserInDB, Depends(require_signed_in
 
 async def require_refresh_cookie(request: Request, db: DBConnection) -> AuthSession:
     if token := request.cookies.get(REFRESH_COOKIE_NAME):
-        if row := db.execute("SELECT * FROM sessions WHERE refresh_token = ?;", [token]).fetchone():
-            session = AuthSession(**row)
+        if session := db.get_auth_session(refresh=token):
             if utc_now() < session.refresh_expiry:
                 return session
 
-    raise HTTPException(401, detail="missing, invalid, or expired refresh token")
+    raise HTTPException(401, detail="missing, invalid, or expired refresh cookie")
 
 
 ExistingCard = Annotated[tuple[Card, Deck], Depends(require_existing_card)]
