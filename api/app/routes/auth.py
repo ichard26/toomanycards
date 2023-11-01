@@ -22,6 +22,7 @@ from florapi import utc_now
 from florapi.security import RateLimiter
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from ulid import ULID
 
 from .. import dependencies as deps
 from ..constants import (
@@ -35,7 +36,6 @@ from ..constants import (
 )
 from ..models import AuthSession, User
 from ..models import modelfields as mf
-from ..vendor.tsidpy import TSID
 
 AccessToken = str
 
@@ -92,7 +92,7 @@ def add_auth_session(
         db.insert(
             "sessions",
             ("id", "username", "refresh_token", "refresh_expiry", "access_token", "access_expiry", "created_at"),
-            (TSID.create(), username, refresh_token, refresh_expiry, access_token, access_expiry, utc_now()),
+            (ULID(), username, refresh_token, refresh_expiry, access_token, access_expiry, utc_now()),
         )
     return db.get_auth_session(access=access_token)
 
@@ -239,8 +239,8 @@ async def list_sessions(
 
 @router.delete("/session/revoke/{id}")
 async def revoke_session(actor: deps.SignedInUser, id: str, db: deps.DBConnection) -> None:
-    """Revoke (delete) a login session by ID."""
-    session = db.get_auth_session(tsid=id)
+    """Revoke (delete) a login session by ULID."""
+    session = db.get_auth_session(id=id)
     if session is None:
         raise HTTPException(404, "Session not found")
 
