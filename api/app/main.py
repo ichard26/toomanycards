@@ -5,6 +5,7 @@
 __version__ = "0.1.0"
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from florapi.middleware import ProxyHeadersMiddleware, TimedLogMiddleware
@@ -14,6 +15,17 @@ from .database import open_sqlite_connection
 from .routes import admin, auth, card, deck
 
 logging.config.dictConfig(LOG_CONFIG)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> None:
+    app.state.log_db = open_sqlite_connection()
+    logger.info("Opened SQLite connection for request logging middleware")
+    yield
+    app.state.log_db.close()
+    logger.info("Closed SQLite connection for request logging middleware")
+
 
 description = """\
 The API powering TooManyCards, an overengineered Quizlet replacement.
@@ -29,6 +41,7 @@ app = FastAPI(
     title="TooManyCards API",
     version=__version__,
     description=description,
+    lifespan=lifespan,
     contact={"name": "Richard Si"},
     openapi_tags=tags_metadata,
 )
@@ -38,7 +51,9 @@ app.include_router(auth.router)
 app.include_router(card.router)
 app.include_router(deck.router)
 app.add_middleware(ProxyHeadersMiddleware, require_none_client=USE_UNIX_DOMAIN_SOCKET)
-app.add_middleware(TimedLogMiddleware, sqlite_factory=open_sqlite_connection)
+app.add_middleware(
+    TimedLogMiddleware, sqlite_factory=lambda: app.state.log_db, sqlite_autoclose=False
+)
 
 
 @app.get("/")
