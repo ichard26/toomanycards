@@ -34,7 +34,7 @@ from ..constants import (
     TLS_ENABLED,
 )
 from ..models import AuthSession, User
-from ..models import modelfields as MF
+from ..models import modelfields as mf
 from ..vendor.tsidpy import TSID
 
 AccessToken = str
@@ -60,10 +60,10 @@ class SignInResponse(BaseModel):
 
 
 class UserUpdateTemplate(BaseModel):
-    username: str = MF.Username(default="")
-    display_name: str = MF.DisplayName(default="")
+    username: str = mf.Username(default="")
+    display_name: str = mf.DisplayName(default="")
     # TODO: find a way to require password reauthentication for "sensitive" endpoints.
-    password: str = MF.Password(default="")
+    password: str = mf.Password(default="")
 
 
 def authenticate_user(username: str, password: str, db) -> Optional[User]:
@@ -125,9 +125,9 @@ async def purge_expired_sessions(purge_delta: timedelta, db: deps.DBConnection) 
 
 @router.post("/signup", status_code=201)
 async def create_new_user(
-    username: Annotated[str, Form(**MF.Username)],
-    password: Annotated[str, Form(**MF.Password)],
-    display_name: Annotated[str, Form(**MF.DisplayName)],
+    username: Annotated[str, Form(**mf.Username)],
+    password: Annotated[str, Form(**mf.Password)],
+    display_name: Annotated[str, Form(**mf.DisplayName)],
     challenge: Annotated[int, Query(gt=25, lt=27)],
     db: deps.DBConnection,
     request: Request,

@@ -3,19 +3,38 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import datetime
-from typing import Any, Optional
+from typing import Any, Mapping, Optional, TypeVar
 from typing_extensions import Self
 
 import pydantic.fields
 from pydantic import BaseModel, Field
 
+BaseModelT = TypeVar("BaseModelT", bound=BaseModel)
 Username = str
 CardID = str
 DeckID = int
 
 
-class MutableField(pydantic.fields.FieldInfo):
-    """A pydantic.fields.FieldInfo subclass that can be updated in-place.
+def update_model(model: BaseModelT, update: Mapping[str, object], /) -> BaseModelT:
+    """Update a model, merging the new contents of another model into it.
+
+    This exists as BaseModel.copy(update=...) does not validate or convert incoming data
+    which is problematic.
+
+    Currently not used as the whole data modelling story of this application needs some
+    thought first.
+    """
+    if not model.__config__().validate_assignment:
+        raise ValueError(f"unsupported model ({model.__class__.__qualname__}), validate_assigment=True needed")
+
+    new_model = model.copy()
+    for field, value in update.items():
+        setattr(new_model, field, value)
+    return new_model
+
+
+class ExtensibleField(pydantic.fields.FieldInfo):
+    """A pydantic FieldInfo subclass that can be recalled with new parameters.
 
     This is used to make sharing field validation configs easier. This is admittedly hacky.
     """
@@ -38,9 +57,19 @@ class MutableField(pydantic.fields.FieldInfo):
 
 
 class modelfields:
-    Username = MutableField(min_length=1, max_length=20, regex=r"^[a-z0-9\.-]+$")
-    Password = MutableField(min_length=1, max_length=100)
-    DisplayName = MutableField(max_length=50)
+    """Shared model field value validation configuration."""
+
+    Username = ExtensibleField(min_length=1, max_length=20, pattern=r"^[a-z0-9\.-]+$")
+    Password = ExtensibleField(min_length=1, max_length=100)
+    DisplayName = ExtensibleField(max_length=50)
+
+    class Deck:
+        Name = ExtensibleField(min_length=1, max_length=50)
+        Description = ExtensibleField(max_length=200)
+
+    class Card:
+        Term = ExtensibleField(min_length=1, max_length=50)
+        Definition = ExtensibleField(min_length=1, max_length=50)
 
 
 class Card(BaseModel):
@@ -49,7 +78,7 @@ class Card(BaseModel):
     definition: str
 
 
-class Deck(BaseModel):
+class Deck(BaseModel, validate_assignment=True):
     id: DeckID
     owner: Optional[Username]
     public: bool
@@ -84,5 +113,5 @@ class AuthSession(BaseModel):
 
 
 class CardTemplate(BaseModel):
-    term: str = Field(min_length=1, max_length=50)
-    definition: str = Field(min_length=1, max_length=50)
+    term: str = modelfields.Card.Term
+    definition: str = modelfields.Card.Definition

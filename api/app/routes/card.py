@@ -4,25 +4,32 @@
 
 from fastapi import APIRouter
 from florapi import utc_now
+from pydantic import BaseModel
 
 from .. import dependencies as deps
-from ..models import CardTemplate
+from ..models import modelfields as mf
 
 router = APIRouter(prefix="/card", tags=["deck"])
 
 
-@router.put("/{card_id}")
-async def replace_card(
-    actor: deps.SignedInUser, card_and_deck: deps.ExistingCard, template: CardTemplate, db: deps.DBConnection
+class CardUpdateTemplate(BaseModel):
+    term: str = mf.Card.Term(default="")
+    definition: str = mf.Card.Definition(default="")
+
+
+@router.patch("/{card_id}")
+async def update_card(
+    actor: deps.SignedInUser,
+    card_and_deck: deps.ExistingCard,
+    template: CardUpdateTemplate,
+    db: deps.DBConnection
 ) -> None:
     card, deck = card_and_deck
     deps.check_for_resource_owner_or_admin(deck.owner, actor)
+    card = card.copy(update=template.dict(exclude_unset=True))
     with db:
-        db.execute(
-            "UPDATE cards SET term = ?, definition = ? WHERE id = ?;",
-            [template.term, template.definition, card.id]
-        )
-        db.execute("UPDATE decks SET updated_at = ? WHERE id = ?;", (utc_now(), deck.id))
+        db.update("cards", {"term": card.term, "definition": card.definition}, where={"id": card.id})
+        db.update("decks", {"updated_at": utc_now()}, where={"id": deck.id})
 
 
 @router.delete("/{card_id}")
@@ -32,5 +39,5 @@ async def delete_card(
     card, deck = card_and_deck
     deps.check_for_resource_owner_or_admin(deck.owner, actor)
     with db:
-        db.execute("DELETE FROM cards WHERE id = ?;", [card.id])
-        db.execute("UPDATE decks SET updated_at = ? WHERE id = ?;", (utc_now(), deck.id))
+        db.delete("cards", {"id": card.id})
+        db.update("decks", {"updated_at": utc_now()}, where={"id": deck.id})
